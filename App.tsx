@@ -20,10 +20,38 @@ const App: React.FC = () => {
   const [selectedPerfume, setSelectedPerfume] = useState<Perfume | null>(null);
   const [userWardrobe, setUserWardrobe] = useState<Wardrobe>({ own: [], want: [], tried: [] });
   const [userRatings, setUserRatings] = useState<Record<string, 'like' | 'dislike'>>({});
+  const [recentlyViewed, setRecentlyViewed] = useState<Perfume[]>([]);
+
+  useEffect(() => {
+    try {
+      const storedRecent = localStorage.getItem('recentlyViewed');
+      if (storedRecent) {
+        const recentNames: string[] = JSON.parse(storedRecent);
+        const recentPerfumes = recentNames
+          .map(name => initialPerfumes.find(p => p.name === name))
+          .filter((p): p is Perfume => p !== undefined);
+        setRecentlyViewed(recentPerfumes);
+      }
+    } catch (error) {
+      console.error("Failed to parse recently viewed perfumes from localStorage", error);
+      localStorage.removeItem('recentlyViewed');
+    }
+  }, []);
 
   const handlePerfumeClick = (perfume: Perfume) => {
     const latestPerfumeState = perfumes.find(p => p.name === perfume.name);
     setSelectedPerfume(latestPerfumeState || perfume);
+
+    setRecentlyViewed(prev => {
+      const newRecentlyViewed = [perfume, ...prev.filter(p => p.name !== perfume.name)].slice(0, 8);
+      try {
+        const recentNames = newRecentlyViewed.map(p => p.name);
+        localStorage.setItem('recentlyViewed', JSON.stringify(recentNames));
+      } catch (error) {
+        console.error("Failed to save recently viewed perfumes to localStorage", error);
+      }
+      return newRecentlyViewed;
+    });
   };
 
   const handleBack = () => {
@@ -112,21 +140,40 @@ const App: React.FC = () => {
         </div>
         
         {!searchTerm && (
-           <div className="py-16 md:py-24 bg-pearl-white">
-            <div className="container mx-auto px-4">
-              <h2 className="text-3xl md:text-4xl font-serif text-center text-deep-taupe mb-4">
-                Trending Now
-              </h2>
-              <p className="text-center max-w-2xl mx-auto mb-12 text-deep-taupe/80">
-                Discover the scents everyone is talking about. These are the current fan favorites based on community engagement.
-              </p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-                {trendingPerfumes.map((perfume) => (
-                  <PerfumeCard key={perfume.name} perfume={perfume} onClick={() => handlePerfumeClick(perfume)} />
-                ))}
-              </div>
+           <>
+            {recentlyViewed.length > 0 && (
+                <div className="py-16 md:py-24 bg-pearl-white">
+                    <div className="container mx-auto px-4">
+                    <h2 className="text-3xl md:text-4xl font-serif text-center text-deep-taupe mb-4">
+                        Recently Viewed
+                    </h2>
+                    <p className="text-center max-w-2xl mx-auto mb-12 text-deep-taupe/80">
+                        Picking up where you left off. Here are the last few fragrances you explored.
+                    </p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+                        {recentlyViewed.map((perfume) => (
+                        <PerfumeCard key={`${perfume.name}-recent`} perfume={perfume} onClick={() => handlePerfumeClick(perfume)} />
+                        ))}
+                    </div>
+                    </div>
+                </div>
+            )}
+            <div className="py-16 md:py-24 bg-champagne-gold/10">
+                <div className="container mx-auto px-4">
+                    <h2 className="text-3xl md:text-4xl font-serif text-center text-deep-taupe mb-4">
+                        Trending Now
+                    </h2>
+                    <p className="text-center max-w-2xl mx-auto mb-12 text-deep-taupe/80">
+                        Discover the scents everyone is talking about. These are the current fan favorites based on community engagement.
+                    </p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+                        {trendingPerfumes.map((perfume) => (
+                        <PerfumeCard key={perfume.name} perfume={perfume} onClick={() => handlePerfumeClick(perfume)} />
+                        ))}
+                    </div>
+                </div>
             </div>
-          </div>
+          </>
         )}
       </>
   );

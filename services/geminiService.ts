@@ -1,23 +1,17 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { Perfume } from '../types';
 
-// Create a new client for each request. Assumes API_KEY is in the environment.
+const API_KEY = "AIzaSyA_0luuSMSoRvx5IuKl6I9H91Kexz2BjZ4";
+
+// Create a new client for each request.
 const getAiClient = () => {
-  const apiKey = process.env.API_KEY;
-  if (!apiKey) {
-    // This error is for the developer/operator, not the end-user.
-    throw new Error("API key is not configured. Please contact the administrator.");
-  }
-  return new GoogleGenAI({ apiKey });
+  return new GoogleGenAI({ apiKey: API_KEY });
 };
 
 // Centralized error handler
 const handleApiError = (error: unknown): never => {
   console.error("Error calling Gemini API:", error);
   if (error instanceof Error) {
-    if (error.message.includes("API key not valid")) {
-      throw new Error("The service is temporarily unavailable due to an API configuration issue.");
-    }
     throw new Error(`Failed to get a response from the AI: ${error.message}`);
   }
   throw new Error("An unknown error occurred while contacting the AI service.");
