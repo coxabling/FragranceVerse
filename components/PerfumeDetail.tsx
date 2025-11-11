@@ -10,6 +10,7 @@ import { VerifiedIcon } from './icons/VerifiedIcon';
 import { ShoppingBagIcon } from './icons/ShoppingBagIcon';
 import { ThumbUpIcon } from './icons/ThumbUpIcon';
 import { ThumbDownIcon } from './icons/ThumbDownIcon';
+import { useApiKey } from '../contexts/ApiKeyContext';
 
 interface PerfumeDetailProps {
   perfume: Perfume;
@@ -50,6 +51,7 @@ const PerfumeDetail: React.FC<PerfumeDetailProps> = ({ perfume, onBack, onUpdate
   const [isLoadingSimilar, setIsLoadingSimilar] = useState(true);
   const [reviews, setReviews] = useState<Review[]>(perfume.reviews);
   const [newReview, setNewReview] = useState({ rating: 0, comment: '' });
+  const { resetApiKey } = useApiKey();
 
   useEffect(() => {
     const fetchSimilar = async () => {
@@ -59,12 +61,15 @@ const PerfumeDetail: React.FC<PerfumeDetailProps> = ({ perfume, onBack, onUpdate
         setSimilarFragrances(similar);
       } catch (error) {
         console.error(error);
+        if (error instanceof Error && error.message.includes('Your API key is not valid')) {
+            resetApiKey();
+        }
       } finally {
         setIsLoadingSimilar(false);
       }
     };
     fetchSimilar();
-  }, [perfume]);
+  }, [perfume, resetApiKey]);
 
   const handleRatingClick = (action: 'like' | 'dislike') => {
     const oldAction = userAction;

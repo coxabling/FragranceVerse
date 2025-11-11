@@ -4,6 +4,7 @@ import { HeartIcon } from './icons/HeartIcon';
 import { ChatIcon } from './icons/ChatIcon';
 import { SparklesIcon } from './icons/SparklesIcon';
 import { enhancePost } from '../services/geminiService';
+import { useApiKey } from '../contexts/ApiKeyContext';
 
 interface Post {
     author: string;
@@ -45,13 +46,23 @@ const CommunityHub: React.FC = () => {
     const [posts, setPosts] = useState<Post[]>(initialPosts);
     const [newPost, setNewPost] = useState('');
     const [isAiLoading, setIsAiLoading] = useState(false);
+    const { resetApiKey } = useApiKey();
 
     const handleAiAssist = async () => {
         if (!newPost.trim()) return;
         setIsAiLoading(true);
-        const enhancedText = await enhancePost(newPost);
-        setNewPost(enhancedText);
-        setIsAiLoading(false);
+        try {
+            const enhancedText = await enhancePost(newPost);
+            setNewPost(enhancedText);
+        } catch (error) {
+            console.error(error);
+            if (error instanceof Error && error.message.includes('Your API key is not valid')) {
+                resetApiKey();
+            }
+            // Optionally show an error toast to the user here
+        } finally {
+            setIsAiLoading(false);
+        }
     };
 
     const handleSubmitPost = (e: React.FormEvent) => {

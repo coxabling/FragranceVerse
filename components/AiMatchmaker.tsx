@@ -1,11 +1,12 @@
 import React, { useState, useCallback } from 'react';
 import { Perfume } from '../types';
-import { getFragranceRecommendations } from '../services/geminiService';
+import { getFragranceRecommendations, getFragranceRecommendationsByVibe } from '../services/geminiService';
 import PerfumeCard from './PerfumeCard';
 import { SparklesIcon } from './icons/SparklesIcon';
 import { UploadIcon } from './icons/UploadIcon';
 import LoadingSpinner from './LoadingSpinner';
 import { commonNotes } from '../constants';
+import { useApiKey } from '../contexts/ApiKeyContext';
 
 type MatchmakerTab = 'mood' | 'scents' | 'vibe';
 
@@ -13,47 +14,78 @@ const AiMatchmaker: React.FC = () => {
   const [activeTab, setActiveTab] = useState<MatchmakerTab>('mood');
   const [mood, setMood] = useState('');
   const [selectedNotes, setSelectedNotes] = useState<string[]>([]);
+  const [image, setImage] = useState<{ file: File; dataUrl: string } | null>(null);
   const [recommendations, setRecommendations] = useState<Perfume[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { resetApiKey } = useApiKey();
 
   const handleNoteToggle = (note: string) => {
     setSelectedNotes(prev =>
       prev.includes(note) ? prev.filter(n => n !== note) : [...prev, note]
     );
   };
+  
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImage({ file, dataUrl: reader.result as string });
+        setError(null);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   const handleFindMatch = useCallback(async () => {
     let prompt = '';
-    if (activeTab === 'mood') {
-        if (!mood.trim()) {
-            setError("Please describe your mood or desired scent.");
-            return;
-        }
-        prompt = mood;
-    } else if (activeTab === 'scents') {
-        if (selectedNotes.length === 0) {
-            setError("Please select at least one scent note.");
-            return;
-        }
-        prompt = `A fragrance featuring the notes: ${selectedNotes.join(', ')}.`;
-    } else {
-        return; // Other tabs not implemented
-    }
-
+    
     setIsLoading(true);
     setError(null);
     setRecommendations([]);
 
     try {
-      const results = await getFragranceRecommendations(prompt);
+      let results: Perfume[];
+      if (activeTab === 'mood') {
+        if (!mood.trim()) {
+            setError("Please describe your mood or desired scent.");
+            setIsLoading(false);
+            return;
+        }
+        prompt = mood;
+        results = await getFragranceRecommendations(prompt);
+      } else if (activeTab === 'scents') {
+        if (selectedNotes.length === 0) {
+            setError("Please select at least one scent note.");
+            setIsLoading(false);
+            return;
+        }
+        prompt = `A fragrance featuring the notes: ${selectedNotes.join(', ')}.`;
+        results = await getFragranceRecommendations(prompt);
+      } else if (activeTab === 'vibe') {
+        if (!image) {
+          setError("Please upload an image.");
+          setIsLoading(false);
+          return;
+        }
+        const base64Data = image.dataUrl.split(',')[1];
+        const mimeType = image.file.type;
+        results = await getFragranceRecommendationsByVibe(base64Data, mimeType);
+      } else {
+        return;
+      }
       setRecommendations(results);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "An unknown error occurred.");
+      if (err instanceof Error && err.message.includes('Your API key is not valid')) {
+        resetApiKey();
+      } else {
+        setError(err instanceof Error ? err.message : "An unknown error occurred.");
+      }
     } finally {
       setIsLoading(false);
     }
-  }, [mood, activeTab, selectedNotes]);
+  }, [mood, activeTab, selectedNotes, image, resetApiKey]);
   
   const renderTabContent = () => {
     switch (activeTab) {
@@ -72,7 +104,7 @@ const AiMatchmaker: React.FC = () => {
           </div>
         );
       case 'scents':
-        return <div>
+        return <div className="w-full">
             <label className="block text-lg font-serif text-deep-taupe mb-4 text-center">Select your favorite scent notes</label>
             <div className="flex flex-wrap justify-center gap-3">
                 {commonNotes.map(note => (
@@ -91,15 +123,26 @@ const AiMatchmaker: React.FC = () => {
             </div>
         </div>;
       case 'vibe':
-         return <div className="text-center p-8 bg-champagne-gold/20 rounded-lg flex flex-col items-center justify-center">
-             <UploadIcon className="w-12 h-12 text-rose-hue mb-4"/>
-            <p className="font-serif text-lg">Photo vibe matching coming soon!</p>
-            <p>Upload a photo to find a fragrance that matches its atmosphere.</p>
-        </div>;
+         return (
+            <div className="text-center w-full flex flex-col items-center">
+                <label htmlFor="vibe-upload" className="cursor-pointer block w-full max-w-md p-8 border-2 border-dashed border-champagne-gold rounded-lg hover:bg-champagne-gold/20 transition-colors">
+                    <UploadIcon className="w-12 h-12 text-rose-hue mx-auto mb-4"/>
+                    <p className="font-serif text-lg">Find a fragrance from a photo</p>
+                    <p className="text-sm text-deep-taupe/80">Click to select an image that captures your desired vibe.</p>
+                </label>
+                <input id="vibe-upload" type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
+                {image && (
+                    <div className="mt-4 relative">
+                        <img src={image.dataUrl} alt="Preview" className="max-h-40 mx-auto rounded-lg shadow-md" />
+                        <button onClick={() => setImage(null)} className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full h-6 w-6 flex items-center justify-center text-sm font-bold">&times;</button>
+                    </div>
+                )}
+            </div>
+        );
     }
   };
 
-  const isButtonDisabled = isLoading || (activeTab === 'mood' && !mood.trim()) || (activeTab === 'scents' && selectedNotes.length === 0) || activeTab === 'vibe';
+  const isButtonDisabled = isLoading || (activeTab === 'mood' && !mood.trim()) || (activeTab === 'scents' && selectedNotes.length === 0) || (activeTab === 'vibe' && !image);
 
   return (
     <div className="py-16 md:py-24 bg-pearl-white">
@@ -122,7 +165,7 @@ const AiMatchmaker: React.FC = () => {
             ))}
           </div>
           
-          <div className="mb-6 min-h-[150px] flex items-center">
+          <div className="mb-6 min-h-[150px] flex items-center justify-center">
             {renderTabContent()}
           </div>
           

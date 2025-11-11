@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Header from './components/Header';
 import Hero from './components/Hero';
 import AiMatchmaker from './components/AiMatchmaker';
@@ -10,6 +10,9 @@ import PerfumeCard from './components/PerfumeCard';
 import PerfumeDetail from './components/PerfumeDetail';
 import Profile from './components/Profile';
 import { Perfume, Wardrobe, WardrobeShelf } from './types';
+import ApiKeyPrompt from './components/ApiKeyPrompt';
+import { ApiKeyProvider } from './contexts/ApiKeyContext';
+import LoadingSpinner from './components/LoadingSpinner';
 
 type View = 'home' | 'matchmaker' | 'visualizer' | 'community' | 'profile';
 
@@ -20,9 +23,35 @@ const App: React.FC = () => {
   const [selectedPerfume, setSelectedPerfume] = useState<Perfume | null>(null);
   const [userWardrobe, setUserWardrobe] = useState<Wardrobe>({ own: [], want: [], tried: [] });
   const [userRatings, setUserRatings] = useState<Record<string, 'like' | 'dislike'>>({});
+  const [hasApiKey, setHasApiKey] = useState(false);
+  const [isCheckingApiKey, setIsCheckingApiKey] = useState(true);
+
+  useEffect(() => {
+    const checkKey = async () => {
+        setIsCheckingApiKey(true);
+        if (window.aistudio && typeof window.aistudio.hasSelectedApiKey === 'function') {
+            const keyExists = await window.aistudio.hasSelectedApiKey();
+            setHasApiKey(keyExists);
+        } else {
+            console.warn('aistudio API not found, assuming API key is set via environment variables.');
+            setHasApiKey(true); // Fallback for environments without the aistudio object
+        }
+        setIsCheckingApiKey(false);
+    };
+    checkKey();
+  }, []);
+
+  const handleKeySelected = () => {
+    // Assume success to avoid race conditions. The API call will fail if it's not actually set.
+    setHasApiKey(true);
+  };
+
+  const resetApiKey = () => {
+    console.error("Invalid API key detected. Prompting user to select a new one.");
+    setHasApiKey(false);
+  };
 
   const handlePerfumeClick = (perfume: Perfume) => {
-    // Ensure we are viewing the most up-to-date perfume from state
     const latestPerfumeState = perfumes.find(p => p.name === perfume.name);
     setSelectedPerfume(latestPerfumeState || perfume);
   };
@@ -33,13 +62,11 @@ const App: React.FC = () => {
 
   const handleUpdateWardrobe = (perfume: Perfume, shelf: WardrobeShelf) => {
     setUserWardrobe(prev => {
-      // Remove from all shelves first to prevent duplicates
       const newWardrobe: Wardrobe = {
         own: prev.own.filter(p => p.name !== perfume.name),
         want: prev.want.filter(p => p.name !== perfume.name),
         tried: prev.tried.filter(p => p.name !== perfume.name),
       };
-      // Add to the new shelf
       newWardrobe[shelf] = [...newWardrobe[shelf], perfume];
       return newWardrobe;
     });
@@ -50,10 +77,8 @@ const App: React.FC = () => {
       prevPerfumes.map(p => {
         if (p.name === perfumeName) {
           const newPerfume = { ...p };
-          // Undo old action if it exists
           if (oldAction === 'like') newPerfume.likes--;
           if (oldAction === 'dislike') newPerfume.dislikes--;
-          // Apply new action if it exists
           if (newAction === 'like') newPerfume.likes++;
           if (newAction === 'dislike') newPerfume.dislikes++;
           return newPerfume;
@@ -165,22 +190,36 @@ const App: React.FC = () => {
     }
   };
 
+  if (isCheckingApiKey) {
+    return (
+      <div className="bg-pearl-white">
+          <LoadingSpinner />
+      </div>
+    );
+  }
+
+  if (!hasApiKey) {
+      return <ApiKeyPrompt onKeySelected={handleKeySelected} />;
+  }
+
   return (
-    <div className="min-h-screen flex flex-col">
-      <Header
-        currentView={currentView}
-        setCurrentView={(view) => {
-          setSelectedPerfume(null); // Reset detail view when changing tabs
-          setCurrentView(view);
-        }}
-        searchTerm={searchTerm}
-        setSearchTerm={setSearchTerm}
-      />
-      <main className="flex-grow">
-        {renderView()}
-      </main>
-      <Footer />
-    </div>
+    <ApiKeyProvider resetApiKey={resetApiKey}>
+      <div className="min-h-screen flex flex-col">
+        <Header
+          currentView={currentView}
+          setCurrentView={(view) => {
+            setSelectedPerfume(null); // Reset detail view when changing tabs
+            setCurrentView(view);
+          }}
+          searchTerm={searchTerm}
+          setSearchTerm={setSearchTerm}
+        />
+        <main className="flex-grow">
+          {renderView()}
+        </main>
+        <Footer />
+      </div>
+    </ApiKeyProvider>
   );
 };
 
