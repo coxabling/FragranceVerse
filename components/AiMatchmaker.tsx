@@ -6,7 +6,6 @@ import { SparklesIcon } from './icons/SparklesIcon';
 import { UploadIcon } from './icons/UploadIcon';
 import LoadingSpinner from './LoadingSpinner';
 import { commonNotes } from '../constants';
-import { useApiKey } from '../contexts/ApiKeyContext';
 
 type MatchmakerTab = 'mood' | 'scents' | 'vibe';
 
@@ -18,7 +17,6 @@ const AiMatchmaker: React.FC = () => {
   const [recommendations, setRecommendations] = useState<Perfume[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { resetApiKey } = useApiKey();
 
   const handleNoteToggle = (note: string) => {
     setSelectedNotes(prev =>
@@ -77,15 +75,11 @@ const AiMatchmaker: React.FC = () => {
       }
       setRecommendations(results);
     } catch (err) {
-      if (err instanceof Error && err.message.includes('Your API key is not valid')) {
-        resetApiKey();
-      } else {
-        setError(err instanceof Error ? err.message : "An unknown error occurred.");
-      }
+      setError(err instanceof Error ? err.message : "An unknown error occurred.");
     } finally {
       setIsLoading(false);
     }
-  }, [mood, activeTab, selectedNotes, image, resetApiKey]);
+  }, [mood, activeTab, selectedNotes, image]);
   
   const renderTabContent = () => {
     switch (activeTab) {

@@ -49,14 +49,7 @@ export interface Wardrobe {
   tried: Perfume[];
 }
 
-// FIX: Define a named interface for aistudio to resolve the type conflict.
-interface AIStudio {
-  hasSelectedApiKey: () => Promise<boolean>;
-  openSelectKey: () => Promise<void>;
-}
-
 declare global {
   interface Window {
-    aistudio?: AIStudio;
   }
 }

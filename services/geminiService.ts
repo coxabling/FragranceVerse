@@ -1,12 +1,12 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { Perfume } from '../types';
 
-// Create a new client for each request to ensure the latest key from the dialog is used.
+// Create a new client for each request. Assumes API_KEY is in the environment.
 const getAiClient = () => {
   const apiKey = process.env.API_KEY;
   if (!apiKey) {
-    // This will be caught by our UI and prompt for a key selection.
-    throw new Error("Your API key is not valid. Please select a different key.");
+    // This error is for the developer/operator, not the end-user.
+    throw new Error("API key is not configured. Please contact the administrator.");
   }
   return new GoogleGenAI({ apiKey });
 };
@@ -15,8 +15,8 @@ const getAiClient = () => {
 const handleApiError = (error: unknown): never => {
   console.error("Error calling Gemini API:", error);
   if (error instanceof Error) {
-    if (error.message.includes("API key not valid") || error.message.includes("Requested entity was not found")) {
-      throw new Error("Your API key is not valid. Please select a different key.");
+    if (error.message.includes("API key not valid")) {
+      throw new Error("The service is temporarily unavailable due to an API configuration issue.");
     }
     throw new Error(`Failed to get a response from the AI: ${error.message}`);
   }

@@ -10,7 +10,6 @@ import { VerifiedIcon } from './icons/VerifiedIcon';
 import { ShoppingBagIcon } from './icons/ShoppingBagIcon';
 import { ThumbUpIcon } from './icons/ThumbUpIcon';
 import { ThumbDownIcon } from './icons/ThumbDownIcon';
-import { useApiKey } from '../contexts/ApiKeyContext';
 
 interface PerfumeDetailProps {
   perfume: Perfume;
@@ -49,27 +48,26 @@ const NotesSection: React.FC<{ title: string; notes: string[] }> = ({ title, not
 const PerfumeDetail: React.FC<PerfumeDetailProps> = ({ perfume, onBack, onUpdateWardrobe, wardrobe, onRatingUpdate, userAction }) => {
   const [similarFragrances, setSimilarFragrances] = useState<Omit<Perfume, 'reviews'|'likes'|'dislikes'>[]>([]);
   const [isLoadingSimilar, setIsLoadingSimilar] = useState(true);
+  const [similarError, setSimilarError] = useState<string | null>(null);
   const [reviews, setReviews] = useState<Review[]>(perfume.reviews);
   const [newReview, setNewReview] = useState({ rating: 0, comment: '' });
-  const { resetApiKey } = useApiKey();
 
   useEffect(() => {
     const fetchSimilar = async () => {
       try {
         setIsLoadingSimilar(true);
+        setSimilarError(null);
         const similar = await getSimilarFragrances(perfume);
         setSimilarFragrances(similar);
       } catch (error) {
         console.error(error);
-        if (error instanceof Error && error.message.includes('Your API key is not valid')) {
-            resetApiKey();
-        }
+        setSimilarError(error instanceof Error ? error.message : "Could not load similar fragrances.");
       } finally {
         setIsLoadingSimilar(false);
       }
     };
     fetchSimilar();
-  }, [perfume, resetApiKey]);
+  }, [perfume]);
 
   const handleRatingClick = (action: 'like' | 'dislike') => {
     const oldAction = userAction;
@@ -219,7 +217,9 @@ const PerfumeDetail: React.FC<PerfumeDetailProps> = ({ perfume, onBack, onUpdate
       <div className="py-12 md:py-16 bg-champagne-gold/20">
           <div className="container mx-auto px-4">
               <h2 className="text-3xl font-serif text-center text-deep-taupe mb-8">You Might Also Love...</h2>
-              {isLoadingSimilar ? <LoadingSpinner /> : (
+              {isLoadingSimilar ? <LoadingSpinner /> : similarError ? (
+                  <p className="text-center text-red-600 bg-red-100 p-4 rounded-lg">{similarError}</p>
+              ) : (
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
                       {similarFragrances.map((p, index) => (
                           <PerfumeCard key={index} perfume={{...p, reviews: [], likes: 0, dislikes: 0}} onClick={() => { /* This would require more state management to chain detail views */ }} />

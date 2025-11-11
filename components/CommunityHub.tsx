@@ -4,7 +4,6 @@ import { HeartIcon } from './icons/HeartIcon';
 import { ChatIcon } from './icons/ChatIcon';
 import { SparklesIcon } from './icons/SparklesIcon';
 import { enhancePost } from '../services/geminiService';
-import { useApiKey } from '../contexts/ApiKeyContext';
 
 interface Post {
     author: string;
@@ -46,20 +45,18 @@ const CommunityHub: React.FC = () => {
     const [posts, setPosts] = useState<Post[]>(initialPosts);
     const [newPost, setNewPost] = useState('');
     const [isAiLoading, setIsAiLoading] = useState(false);
-    const { resetApiKey } = useApiKey();
+    const [error, setError] = useState<string | null>(null);
 
     const handleAiAssist = async () => {
         if (!newPost.trim()) return;
         setIsAiLoading(true);
+        setError(null);
         try {
             const enhancedText = await enhancePost(newPost);
             setNewPost(enhancedText);
-        } catch (error) {
-            console.error(error);
-            if (error instanceof Error && error.message.includes('Your API key is not valid')) {
-                resetApiKey();
-            }
-            // Optionally show an error toast to the user here
+        } catch (err) {
+            console.error(err);
+            setError(err instanceof Error ? err.message : "An unknown error occurred with AI Assist.");
         } finally {
             setIsAiLoading(false);
         }
@@ -118,6 +115,7 @@ const CommunityHub: React.FC = () => {
                                 </button>
                             </div>
                         </form>
+                        {error && <p className="text-center text-red-600 mt-2 text-sm">{error}</p>}
                     </div>
 
                     {/* Posts Feed */}
