@@ -274,12 +274,33 @@ export const featuredPerfumes: Perfume[] = [
         { brand: 'Al Haramain', name: 'Amber Oud Tobacco Edition' },
     ]
   },
+  {
+    name: 'Attraction Potion',
+    brand: 'Scent Seduction',
+    description: 'A revolutionary fragrance engineered with synthetic pheromones designed to enhance your natural allure and create an irresistible magnetic aura. A subtle yet powerful statement.',
+    topNotes: ['Iso E Super', 'Pink Pepper'],
+    middleNotes: ['Hedione', 'Iris', 'Ambroxan'],
+    baseNotes: ['White Musk', 'Cashmeran', 'Vetiver'],
+    imageUrl: 'https://i.ibb.co/6y4SpCr/pheromone-perfume-hr.png',
+    family: 'Woody',
+    longevity: 5,
+    sillage: 4,
+    likes: 1987,
+    dislikes: 155,
+    isVerified: false,
+    amazonSearchTerm: 'Pheromone Perfume for Attraction',
+    reviews: [
+        { author: 'DateNightDarling', rating: 5, comment: 'I was skeptical, but wow! I wore this out and the compliments were non-stop. It feels like it amplifies my own scent in the best way possible. Definitely a confidence booster!', date: '2023-11-10' },
+        { author: 'TheAlchemist', rating: 4, comment: 'The concept is fascinating. It\'s a very clean, "your-skin-but-better" scent. Whether it\'s the pheromones or just a great composition, it\'s undeniably intriguing and gets noticed.', date: '2023-10-18' },
+    ],
+    clones: []
+  }
 ];
 
 // In a real application, this data would be dynamically determined by user activity,
 // review counts, or recent sales data from a backend service. For this demo,
 // we'll select a few popular items to simulate a "trending" list.
-const trendingPerfumeNames = ['Black Opium', 'Santal 33', 'Acqua di Giò', 'Spicebomb'];
+const trendingPerfumeNames = ['Black Opium', 'Santal 33', 'Acqua di Giò', 'Attraction Potion'];
 export const trendingPerfumes: Perfume[] = featuredPerfumes.filter(p => trendingPerfumeNames.includes(p.name));
 
 
