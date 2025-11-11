@@ -17,6 +17,7 @@ interface PerfumeDetailProps {
   onUpdateWardrobe: (perfume: Perfume, shelf: WardrobeShelf) => void;
   wardrobe: Wardrobe;
   onRatingUpdate: (perfumeName: string, newAction: 'like' | 'dislike' | null, oldAction: 'like' | 'dislike' | null) => void;
+  userAction: 'like' | 'dislike' | null;
 }
 
 const RatingBar: React.FC<{ label: string; rating: number }> = ({ label, rating }) => (
@@ -44,13 +45,11 @@ const NotesSection: React.FC<{ title: string; notes: string[] }> = ({ title, not
     </div>
 );
 
-const PerfumeDetail: React.FC<PerfumeDetailProps> = ({ perfume, onBack, onUpdateWardrobe, wardrobe, onRatingUpdate }) => {
+const PerfumeDetail: React.FC<PerfumeDetailProps> = ({ perfume, onBack, onUpdateWardrobe, wardrobe, onRatingUpdate, userAction }) => {
   const [similarFragrances, setSimilarFragrances] = useState<Omit<Perfume, 'reviews'|'likes'|'dislikes'>[]>([]);
   const [isLoadingSimilar, setIsLoadingSimilar] = useState(true);
   const [reviews, setReviews] = useState<Review[]>(perfume.reviews);
   const [newReview, setNewReview] = useState({ rating: 0, comment: '' });
-  // FIX: Changed state to use 'like'/'dislike' to match prop and handler types.
-  const [userAction, setUserAction] = useState<'like' | 'dislike' | null>(null);
 
   useEffect(() => {
     const fetchSimilar = async () => {
@@ -71,7 +70,6 @@ const PerfumeDetail: React.FC<PerfumeDetailProps> = ({ perfume, onBack, onUpdate
     const oldAction = userAction;
     const newAction = oldAction === action ? null : action;
     onRatingUpdate(perfume.name, newAction, oldAction);
-    setUserAction(newAction);
   };
 
   const handleReviewSubmit = (e: React.FormEvent) => {
@@ -163,21 +161,17 @@ const PerfumeDetail: React.FC<PerfumeDetailProps> = ({ perfume, onBack, onUpdate
                       <div className="flex items-center gap-6 my-4 py-2 border-y border-champagne-gold/50">
                           <button
                               onClick={() => handleRatingClick('like')}
-                              // FIX: Update condition to use 'like' instead of 'liked'
                               className={`flex items-center gap-2 text-deep-taupe transition-colors duration-200 hover:text-green-600 ${userAction === 'like' ? 'text-green-600' : ''}`}
                               aria-label="Like this perfume"
                           >
-                              {/* FIX: Update condition to use 'like' instead of 'liked' */}
                               <ThumbUpIcon className={`w-6 h-6 ${userAction === 'like' ? 'fill-current' : 'fill-none'}`} />
                               <span className="font-sans font-bold text-lg">{perfume.likes.toLocaleString()}</span>
                           </button>
                           <button
                               onClick={() => handleRatingClick('dislike')}
-                              // FIX: Update condition to use 'dislike' instead of 'disliked'
                               className={`flex items-center gap-2 text-deep-taupe transition-colors duration-200 hover:text-red-600 ${userAction === 'dislike' ? 'text-red-600' : ''}`}
                               aria-label="Dislike this perfume"
                           >
-                              {/* FIX: Update condition to use 'dislike' instead of 'disliked' */}
                               <ThumbDownIcon className={`w-6 h-6 ${userAction === 'dislike' ? 'fill-current' : 'fill-none'}`} />
                               <span className="font-sans font-bold text-lg">{perfume.dislikes.toLocaleString()}</span>
                           </button>

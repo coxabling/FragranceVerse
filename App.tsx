@@ -19,6 +19,7 @@ const App: React.FC = () => {
   const [perfumes, setPerfumes] = useState<Perfume[]>(initialPerfumes);
   const [selectedPerfume, setSelectedPerfume] = useState<Perfume | null>(null);
   const [userWardrobe, setUserWardrobe] = useState<Wardrobe>({ own: [], want: [], tried: [] });
+  const [userRatings, setUserRatings] = useState<Record<string, 'like' | 'dislike'>>({});
 
   const handlePerfumeClick = (perfume: Perfume) => {
     // Ensure we are viewing the most up-to-date perfume from state
@@ -60,6 +61,15 @@ const App: React.FC = () => {
         return p;
       })
     );
+    setUserRatings(prev => {
+      const newRatings = { ...prev };
+      if (newAction) {
+        newRatings[perfumeName] = newAction;
+      } else {
+        delete newRatings[perfumeName];
+      }
+      return newRatings;
+    });
   };
 
   const filteredPerfumes = searchTerm.trim() === ''
@@ -136,6 +146,7 @@ const App: React.FC = () => {
         onUpdateWardrobe={handleUpdateWardrobe}
         wardrobe={userWardrobe}
         onRatingUpdate={handleRatingUpdate}
+        userAction={userRatings[activePerfume.name] || null}
       />;
     }
 
