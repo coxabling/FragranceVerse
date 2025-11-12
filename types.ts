@@ -28,10 +28,6 @@ export interface Perfume {
   dislikes: number;
   isVerified?: boolean;
   amazonSearchTerm?: string;
-  affiliate?: {
-    provider: 'amazon';
-    tag: string;
-  };
   clones?: ClonePerfume[];
 }
 

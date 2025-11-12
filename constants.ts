@@ -1,4 +1,3 @@
-
 import { Perfume, ScentFamily } from './types';
 
 export const featuredPerfumes: Perfume[] = [
@@ -17,7 +16,6 @@ export const featuredPerfumes: Perfume[] = [
     dislikes: 52,
     isVerified: true,
     amazonSearchTerm: 'Chanel No 5 Eau de Parfum',
-    affiliate: { provider: 'amazon', tag: 'chanelbeauty-21' },
     reviews: [
         { author: 'ClassicGal', rating: 5, comment: 'An absolute masterpiece. It makes me feel so elegant and timeless. Not for everyone, but iconic for a reason.', date: '2023-10-15' },
         { author: 'ScentExplorer', rating: 4, comment: 'The aldehydes are very strong at first, but the dry down is a beautiful powdery floral. A must-try for any collector.', date: '2023-09-22' },
@@ -37,7 +35,6 @@ export const featuredPerfumes: Perfume[] = [
     dislikes: 31,
     isVerified: true,
     amazonSearchTerm: 'Dior J\'adore Eau de Parfum',
-    affiliate: { provider: 'amazon', tag: 'diorfragrance-21' },
     reviews: [
         { author: 'LilyPetals', rating: 5, comment: 'This is my signature scent! It\'s so feminine, classy, and versatile. I get compliments every time I wear it.', date: '2023-11-01' },
     ],

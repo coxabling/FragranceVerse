@@ -130,9 +130,8 @@ const PerfumeDetail: React.FC<PerfumeDetailProps> = ({ perfume, onBack, onUpdate
     );
   };
   
-  const amazonAffiliateTag = perfume.affiliate?.tag ?? 'coxabling0e-21';
   const amazonLink = perfume.amazonSearchTerm 
-    ? `https://www.amazon.com/s?k=${encodeURIComponent(perfume.amazonSearchTerm)}&tag=${amazonAffiliateTag}`
+    ? `https://www.amazon.com/s?k=${encodeURIComponent(perfume.amazonSearchTerm)}`
     : null;
 
   return (
@@ -209,9 +208,8 @@ const PerfumeDetail: React.FC<PerfumeDetailProps> = ({ perfume, onBack, onUpdate
                                 className="w-full flex items-center justify-center bg-[#FF9900] text-black font-bold py-3 px-8 rounded-full text-lg font-sans hover:bg-[#FFAA33] transition-all duration-300 transform hover:scale-105 shadow-lg"
                             >
                                 <ShoppingBagIcon className="w-6 h-6 mr-3" />
-                                Buy on Amazon
+                                Search on Amazon
                             </a>
-                            <p className="text-xs text-center mt-2 text-deep-taupe/60">As an Amazon Associate, we earn from qualifying purchases.</p>
                         </div>
                       )}
                   </div>
