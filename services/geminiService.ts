@@ -1,5 +1,7 @@
+
 import { GoogleGenAI, Type, Modality } from "@google/genai";
 import { Perfume } from '../types';
+import { saveImage, getImage } from './dbService';
 
 // In-memory caches
 const recommendationsCache = new Map<string, Perfume[]>();
@@ -246,7 +248,13 @@ export const getSimilarFragrances = async (perfume: Perfume): Promise<Omit<Perfu
 };
 
 export const generateFragranceImage = async (perfume: Perfume): Promise<string> => {
+    const cacheKey = `fragrance_image_${perfume.name}`;
     try {
+        const cachedImage = await getImage(cacheKey);
+        if (cachedImage) {
+            return cachedImage;
+        }
+
         const ai = getAiClient();
         const allNotes = [...perfume.topNotes, ...perfume.middleNotes, ...perfume.baseNotes].slice(0, 5).join(', ');
         const prompt = `A professional, photorealistic product shot of a perfume bottle for "${perfume.name}" by ${perfume.brand}.
@@ -267,7 +275,9 @@ export const generateFragranceImage = async (perfume: Perfume): Promise<string> 
 
         for (const part of response.candidates[0].content.parts) {
             if (part.inlineData) {
-                return part.inlineData.data;
+                const dataUrl = `data:image/png;base64,${part.inlineData.data}`;
+                await saveImage(cacheKey, dataUrl);
+                return dataUrl;
             }
         }
         

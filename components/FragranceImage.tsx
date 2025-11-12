@@ -3,7 +3,6 @@ import React, { useState, useEffect } from 'react';
 import { LogoIcon } from './icons/LogoIcon';
 import { generateFragranceImage } from '../services/geminiService';
 import { Perfume } from '../types';
-import { saveImage, getImage } from '../services/dbService';
 import { useApiKey } from '../contexts/ApiKeyContext';
 
 interface FragranceImageProps {
@@ -18,75 +17,63 @@ const FragranceImage: React.FC<FragranceImageProps> = ({ perfume, alt, className
   const [imageUrl, setImageUrl] = useState<string>('');
   const { resetApiKey } = useApiKey();
   
-  const cacheKey = `fragrance_image_${perfume.name}`;
-
   useEffect(() => {
     let isCancelled = false;
 
-    const generateAndCacheImage = async () => {
+    const loadImage = async () => {
       setIsLoading(true);
-      try {
-        const cachedImage = await getImage(cacheKey);
-        if (cachedImage && !isCancelled) {
-          setImageUrl(cachedImage);
-          return;
-        }
+      setError(false);
+      
+      let finalUrl: string | undefined;
 
-        const base64Data = await generateFragranceImage(perfume);
-        if (!isCancelled) {
-          const dataUrl = `data:image/png;base64,${base64Data}`;
-          setImageUrl(dataUrl);
-          await saveImage(cacheKey, dataUrl);
-        }
-      } catch (err) {
-        if (!isCancelled) {
-          console.error(`Failed to generate or cache image for ${perfume.name}`, err);
-          if (err instanceof Error && err.message.includes('Invalid API key')) {
-            resetApiKey();
+      // 1. Try to load official image URL if available
+      if (perfume.imageUrl) {
+        try {
+          const img = new Image();
+          img.src = perfume.imageUrl;
+          await new Promise((resolve, reject) => {
+            img.onload = resolve;
+            img.onerror = reject;
+          });
+          if (!isCancelled) {
+              finalUrl = perfume.imageUrl;
           }
-          setError(true);
-        }
-      } finally {
-        if (!isCancelled) {
-          setIsLoading(false);
+        } catch (e) {
+          console.warn(`Official image for ${perfume.name} failed to load. Falling back to AI generation.`);
+          // If official image fails, we'll proceed to generation in the next step.
         }
       }
-    };
 
-    const loadImage = async () => {
-        setIsLoading(true);
-        setError(false);
-        setImageUrl('');
-
-        if (perfume.imageUrl) {
-            try {
-                const img = new Image();
-                img.src = perfume.imageUrl;
-                await new Promise((resolve, reject) => {
-                    img.onload = resolve;
-                    img.onerror = reject;
-                });
-                if (!isCancelled) {
-                    setImageUrl(perfume.imageUrl!);
-                    setIsLoading(false);
-                }
-            } catch (e) {
-                 if (!isCancelled) {
-                    console.warn(`Official image for ${perfume.name} failed to load. Falling back to AI generation.`);
-                    await generateAndCacheImage();
-                }
+      // 2. If no official URL or it failed, get/generate image (caching is handled inside the service)
+      if (!finalUrl) {
+        try {
+          finalUrl = await generateFragranceImage(perfume);
+        } catch (err) {
+          if (!isCancelled) {
+            console.error(`Failed to generate or cache image for ${perfume.name}`, err);
+            if (err instanceof Error && err.message.includes('Invalid API key')) {
+              resetApiKey();
             }
-        } else {
-            await generateAndCacheImage();
+            setError(true);
+          }
         }
+      }
+      
+      if (finalUrl && !isCancelled) {
+        setImageUrl(finalUrl);
+      }
+
+      if (!isCancelled) {
+        setIsLoading(false);
+      }
     };
 
     loadImage();
 
     return () => {
-        isCancelled = true;
+      isCancelled = true;
     };
-  }, [perfume, cacheKey, resetApiKey]);
+  }, [perfume, resetApiKey]);
 
   if (isLoading) {
     return (

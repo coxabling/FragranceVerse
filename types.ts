@@ -49,14 +49,15 @@ export interface Wardrobe {
   tried: Perfume[];
 }
 
-// Fix: Define AIStudio interface to resolve type conflict and centralize the type definition.
-// Fix: Removed 'export' from AIStudio interface to resolve a "Subsequent property declarations must have the same type" error. This type is only used for global augmentation within this file, so it doesn't need to be exported.
-interface AIStudio {
-  openSelectKey: () => Promise<void>;
-  hasSelectedApiKey: () => Promise<boolean>;
-}
-
+// Fix: To resolve the "Subsequent property declarations must have the same type" error,
+// the AIStudio interface is moved inside the `declare global` block. This ensures it's
+// declared in the global scope, preventing conflicts when augmenting the global Window type from within a module.
 declare global {
+  interface AIStudio {
+    openSelectKey: () => Promise<void>;
+    hasSelectedApiKey: () => Promise<boolean>;
+  }
+
   interface Window {
     aistudio?: AIStudio;
   }
