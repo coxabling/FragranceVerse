@@ -275,13 +275,11 @@ export const generateFragranceImage = async (perfume: Perfume): Promise<string> 
                 responseModalities: [Modality.IMAGE],
             },
         });
-
-        for (const part of response.candidates[0].content.parts) {
-            if (part.inlineData) {
-                const dataUrl = `data:image/png;base64,${part.inlineData.data}`;
-                await saveImage(cacheKey, dataUrl);
-                return dataUrl;
-            }
+        
+        if (response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data) {
+            const dataUrl = `data:image/png;base64,${response.candidates[0].content.parts[0].inlineData.data}`;
+            await saveImage(cacheKey, dataUrl);
+            return dataUrl;
         }
         
         throw new Error("No image data found in the AI response.");
