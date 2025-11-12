@@ -18,7 +18,7 @@ const Header: React.FC<HeaderProps> = ({ currentView, setCurrentView, searchTerm
   const navItems = [
     { id: 'home', label: 'Home' },
     { id: 'matchmaker', label: 'AI Matchmaker' },
-    { id: 'visualizer', label: 'Scent Wheel' },
+    { id: 'visualizer', label: 'Scent by Vibe' },
     { id: 'community', label: 'Community' },
     { id: 'profile', label: 'My Profile' },
   ] as const;
