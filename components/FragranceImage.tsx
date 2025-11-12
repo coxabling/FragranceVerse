@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { LogoIcon } from './icons/LogoIcon';
 import { generateFragranceImage } from '../services/geminiService';
 import { Perfume } from '../types';
+import { useApiKey } from '../contexts/ApiKeyContext';
 
 interface FragranceImageProps {
   perfume: Perfume;
@@ -14,6 +15,7 @@ const FragranceImage: React.FC<FragranceImageProps> = ({ perfume, alt, className
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<boolean>(false);
   const [imageUrl, setImageUrl] = useState<string>('');
+  const { resetApiKey } = useApiKey();
   
   useEffect(() => {
     let isCancelled = false;
@@ -49,7 +51,11 @@ const FragranceImage: React.FC<FragranceImageProps> = ({ perfume, alt, className
         } catch (err) {
           if (!isCancelled) {
             console.error(`Failed to generate or cache image for ${perfume.name}`, err);
-            setError(true);
+            if (err instanceof Error && err.message === 'Invalid API key') {
+              resetApiKey(); // Don't set local error, let the global prompt handle it
+            } else {
+              setError(true);
+            }
           }
         }
       }
@@ -68,7 +74,7 @@ const FragranceImage: React.FC<FragranceImageProps> = ({ perfume, alt, className
     return () => {
       isCancelled = true;
     };
-  }, [perfume]);
+  }, [perfume, resetApiKey]);
 
   if (isLoading) {
     return (

@@ -12,13 +12,23 @@ const enhancePostCache = new Map<string, string>();
 
 // Create a new client for each request, assuming API_KEY is in the environment.
 const getAiClient = () => {
-  return new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const apiKey = process.env.API_KEY;
+  if (!apiKey) {
+    // This will be caught by handleApiError and transformed into 'Invalid API key'
+    throw new Error("An API Key must be set when running in a browser");
+  }
+  return new GoogleGenAI({ apiKey });
 };
 
 // Centralized error handler
 const handleApiError = (error: unknown): never => {
   console.error("Error calling Gemini API:", error);
   if (error instanceof Error) {
+    const message = error.message.toLowerCase();
+    // Check for specific API key-related error messages from the Gemini API
+    if (message.includes('api key not valid') || message.includes('api key must be set')) {
+      throw new Error('Invalid API key');
+    }
     throw new Error(`Failed to get a response from the AI: ${error.message}`);
   }
   throw new Error("An unknown error occurred while contacting the AI service.");

@@ -11,6 +11,9 @@ import PerfumeCard from './components/PerfumeCard';
 import PerfumeDetail from './components/PerfumeDetail';
 import Profile from './components/Profile';
 import { Perfume, Wardrobe, WardrobeShelf } from './types';
+import ApiKeyPrompt from './components/ApiKeyPrompt';
+import { ApiKeyProvider } from './contexts/ApiKeyContext';
+import LoadingSpinner from './components/LoadingSpinner';
 
 type View = 'home' | 'matchmaker' | 'visualizer' | 'community' | 'profile';
 
@@ -22,6 +25,19 @@ const App: React.FC = () => {
   const [userWardrobe, setUserWardrobe] = useState<Wardrobe>({ own: [], want: [], tried: [] });
   const [userRatings, setUserRatings] = useState<Record<string, 'like' | 'dislike'>>({});
   const [recentlyViewed, setRecentlyViewed] = useState<Perfume[]>([]);
+  const [isKeySelected, setIsKeySelected] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    const checkApiKey = async () => {
+        if (window.aistudio && typeof window.aistudio.hasSelectedApiKey === 'function') {
+            const hasKey = await window.aistudio.hasSelectedApiKey();
+            setIsKeySelected(hasKey);
+        } else {
+            setIsKeySelected(true); 
+        }
+    };
+    checkApiKey();
+  }, []);
 
   useEffect(() => {
     try {
@@ -38,6 +54,10 @@ const App: React.FC = () => {
       localStorage.removeItem('recentlyViewed');
     }
   }, []);
+  
+  const resetApiKey = () => {
+      setIsKeySelected(false);
+  };
 
   const handlePerfumeClick = (perfume: Perfume) => {
     const latestPerfumeState = perfumes.find(p => p.name === perfume.name);
@@ -207,23 +227,33 @@ const App: React.FC = () => {
         return renderHomeContent();
     }
   };
+  
+  if (isKeySelected === null) {
+      return <div className="flex items-center justify-center min-h-screen"><LoadingSpinner /></div>;
+  }
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <Header
-        currentView={currentView}
-        setCurrentView={(view) => {
-          setSelectedPerfume(null); // Reset detail view when changing tabs
-          setCurrentView(view);
-        }}
-        searchTerm={searchTerm}
-        setSearchTerm={setSearchTerm}
-      />
-      <main className="flex-grow">
-        {renderView()}
-      </main>
-      <Footer />
-    </div>
+    <ApiKeyProvider resetApiKey={resetApiKey}>
+      {isKeySelected ? (
+        <div className="min-h-screen flex flex-col">
+          <Header
+            currentView={currentView}
+            setCurrentView={(view) => {
+              setSelectedPerfume(null);
+              setCurrentView(view);
+            }}
+            searchTerm={searchTerm}
+            setSearchTerm={setSearchTerm}
+          />
+          <main className="flex-grow">
+            {renderView()}
+          </main>
+          <Footer />
+        </div>
+      ) : (
+        <ApiKeyPrompt onKeySelected={() => setIsKeySelected(true)} />
+      )}
+    </ApiKeyProvider>
   );
 };
 

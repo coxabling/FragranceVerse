@@ -11,6 +11,7 @@ import { BriefcaseIcon } from './icons/BriefcaseIcon';
 import { MoonIcon } from './icons/MoonIcon';
 import { GiftIcon } from './icons/GiftIcon';
 import { ArrowLeftIcon } from './icons/ArrowLeftIcon';
+import { useApiKey } from '../contexts/ApiKeyContext';
 
 const TOTAL_STEPS = 5;
 
@@ -36,6 +37,7 @@ const AiMatchmaker: React.FC = () => {
   const [recommendations, setRecommendations] = useState<Perfume[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { resetApiKey } = useApiKey();
   
   const occasionIcons: Record<string, React.ReactNode> = {
     everyday: <SunIcon className="w-10 h-10 mb-2" />,
@@ -63,11 +65,16 @@ const AiMatchmaker: React.FC = () => {
       setQuizStep(TOTAL_STEPS + 1); // Move to results screen
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "An unknown error occurred.";
-      setError(errorMessage);
+      if (errorMessage === 'Invalid API key') {
+        resetApiKey();
+        setError("Your API key is invalid or has expired. Please select a new one.");
+      } else {
+        setError(errorMessage);
+      }
     } finally {
       setIsLoading(false);
     }
-  }, [quizAnswers]);
+  }, [quizAnswers, resetApiKey]);
   
   const handleStartOver = () => {
       setQuizAnswers(initialAnswers);

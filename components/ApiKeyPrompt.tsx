@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { SparklesIcon } from './icons/SparklesIcon';
 
@@ -10,7 +11,7 @@ const ApiKeyPrompt: React.FC<ApiKeyPromptProps> = ({ onKeySelected }) => {
     if (window.aistudio && typeof window.aistudio.openSelectKey === 'function') {
         try {
             await window.aistudio.openSelectKey();
-            // Assume success and optimistically update the UI
+            // Assume success and optimistically update the UI, as per guidelines
             onKeySelected();
         } catch (error) {
             console.error("Error opening API key selection:", error);
