@@ -41,7 +41,7 @@ const FragranceImage: React.FC<FragranceImageProps> = ({ perfume, alt, className
       } catch (err) {
         if (!isCancelled) {
           console.error(`Failed to generate or cache image for ${perfume.name}`, err);
-          if (err instanceof Error && err.message.includes('API key')) {
+          if (err instanceof Error && err.message.includes('Invalid API key')) {
             resetApiKey();
           }
           setError(true);

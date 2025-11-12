@@ -1,8 +1,18 @@
 import { GoogleGenAI, Type, Modality } from "@google/genai";
 import { Perfume } from '../types';
 
+// In-memory caches
+const recommendationsCache = new Map<string, Perfume[]>();
+const vibeRecommendationsCache = new Map<string, Perfume[]>();
+const similarFragrancesCache = new Map<string, Omit<Perfume, 'reviews'>[]>();
+const enhancePostCache = new Map<string, string>();
+
+
 // Create a new client for each request.
 const getAiClient = () => {
+  if (!process.env.API_KEY) {
+    throw new Error("API_KEY_MISSING");
+  }
   return new GoogleGenAI({ apiKey: process.env.API_KEY });
 };
 
@@ -11,7 +21,7 @@ const handleApiError = (error: unknown): never => {
   console.error("Error calling Gemini API:", error);
   if (error instanceof Error) {
     const message = error.message.toLowerCase();
-    if (message.includes('api key not valid') || message.includes('api key is invalid') || message.includes('requested entity was not found')) {
+    if (message.includes('api key not valid') || message.includes('api key is invalid') || message.includes('requested entity was not found') || message.includes('api_key_missing')) {
         throw new Error("Invalid API key. Please select a valid key to continue.");
     }
     throw new Error(`Failed to get a response from the AI: ${error.message}`);
@@ -20,6 +30,11 @@ const handleApiError = (error: unknown): never => {
 };
 
 export const getFragranceRecommendations = async (prompt: string): Promise<Perfume[]> => {
+  const cacheKey = prompt;
+  if (recommendationsCache.has(cacheKey)) {
+    return recommendationsCache.get(cacheKey)!;
+  }
+  
   try {
     const ai = getAiClient();
     const response = await ai.models.generateContent({
@@ -70,7 +85,8 @@ export const getFragranceRecommendations = async (prompt: string): Promise<Perfu
         likes: Math.floor(Math.random() * 500) + 50,
         dislikes: Math.floor(Math.random() * 50) + 5,
     }));
-
+    
+    recommendationsCache.set(cacheKey, recommendationsWithReviews);
     return recommendationsWithReviews;
 
   } catch (error) {
@@ -79,6 +95,11 @@ export const getFragranceRecommendations = async (prompt: string): Promise<Perfu
 };
 
 export const getFragranceRecommendationsByVibe = async (base64Data: string, mimeType: string): Promise<Perfume[]> => {
+  const cacheKey = base64Data;
+  if (vibeRecommendationsCache.has(cacheKey)) {
+      return vibeRecommendationsCache.get(cacheKey)!;
+  }
+
   try {
     const ai = getAiClient();
     const imagePart = {
@@ -140,7 +161,8 @@ export const getFragranceRecommendationsByVibe = async (base64Data: string, mime
         likes: Math.floor(Math.random() * 500) + 50,
         dislikes: Math.floor(Math.random() * 50) + 5,
     }));
-
+    
+    vibeRecommendationsCache.set(cacheKey, recommendationsWithExtras);
     return recommendationsWithExtras;
 
   } catch (error) {
@@ -151,19 +173,32 @@ export const getFragranceRecommendationsByVibe = async (base64Data: string, mime
 
 export const enhancePost = async (text: string): Promise<string> => {
     if (!text.trim()) return "";
+    
+    const cacheKey = text;
+    if (enhancePostCache.has(cacheKey)) {
+        return enhancePostCache.get(cacheKey)!;
+    }
+    
     try {
         const ai = getAiClient();
         const response = await ai.models.generateContent({
             model: "gemini-2.5-flash",
             contents: `Rewrite the following user post about perfume to be more poetic, descriptive, and engaging, in the style of a fragrance expert. Keep the core meaning intact. User post: "${text}"`,
         });
-        return response.text;
+        const enhancedText = response.text;
+        enhancePostCache.set(cacheKey, enhancedText);
+        return enhancedText;
     } catch (error) {
         handleApiError(error);
     }
 };
 
 export const getSimilarFragrances = async (perfume: Perfume): Promise<Omit<Perfume, 'reviews'>[]> => {
+    const cacheKey = `${perfume.brand}-${perfume.name}`;
+    if (similarFragrancesCache.has(cacheKey)) {
+        return similarFragrancesCache.get(cacheKey)!;
+    }
+
     const allNotes = [...perfume.topNotes, ...perfume.middleNotes, ...perfume.baseNotes].join(', ');
     const prompt = `Given the perfume "${perfume.name}" by "${perfume.brand}" with key notes like ${allNotes}, recommend 3 other real-world, well-known perfumes that have a similar scent profile or vibe. For each recommendation, provide its name, brand, a poetic one-sentence description, and three separate lists for its key top, middle, and base notes. Also include a rating from 1 to 5 for both longevity and sillage. Do not recommend the original perfume itself.`;
 
@@ -202,7 +237,9 @@ export const getSimilarFragrances = async (perfume: Perfume): Promise<Omit<Perfu
 
         const jsonString = response.text;
         const parsed = JSON.parse(jsonString);
-        return parsed.recommendations || parsed;
+        const recommendations = parsed.recommendations || parsed;
+        similarFragrancesCache.set(cacheKey, recommendations);
+        return recommendations;
     } catch (error) {
         handleApiError(error);
     }

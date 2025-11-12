@@ -5,6 +5,7 @@ import { ChatIcon } from './icons/ChatIcon';
 import { SparklesIcon } from './icons/SparklesIcon';
 import { enhancePost } from '../services/geminiService';
 import { ShareIcon } from './icons/ShareIcon';
+import { useApiKey } from '../contexts/ApiKeyContext';
 
 interface Post {
     author: string;
@@ -47,6 +48,7 @@ const CommunityHub: React.FC = () => {
     const [newPost, setNewPost] = useState('');
     const [isAiLoading, setIsAiLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const { resetApiKey } = useApiKey();
 
     const handleAiAssist = async () => {
         if (!newPost.trim()) return;
@@ -57,7 +59,12 @@ const CommunityHub: React.FC = () => {
             setNewPost(enhancedText);
         } catch (err) {
             console.error(err);
-            setError(err instanceof Error ? err.message : "An unknown error occurred with AI Assist.");
+            const errorMessage = err instanceof Error ? err.message : "An unknown error occurred with AI Assist.";
+            if (errorMessage.includes('Invalid API key')) {
+                resetApiKey();
+            } else {
+                setError(errorMessage);
+            }
         } finally {
             setIsAiLoading(false);
         }
