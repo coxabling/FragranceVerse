@@ -8,8 +8,14 @@ interface ApiKeyPromptProps {
 const ApiKeyPrompt: React.FC<ApiKeyPromptProps> = ({ onKeySelected }) => {
   const handleSelectKey = async () => {
     if (window.aistudio && typeof window.aistudio.openSelectKey === 'function') {
-        await window.aistudio.openSelectKey();
-        onKeySelected();
+        try {
+            await window.aistudio.openSelectKey();
+            // Assume success and optimistically update the UI
+            onKeySelected();
+        } catch (error) {
+            console.error("Error opening API key selection:", error);
+            alert("Could not open the API key selection dialog. Please try again.");
+        }
     } else {
         alert("API key selection is not available in this environment.");
     }

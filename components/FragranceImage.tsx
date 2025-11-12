@@ -3,6 +3,8 @@ import React, { useState, useEffect } from 'react';
 import { LogoIcon } from './icons/LogoIcon';
 import { generateFragranceImage } from '../services/geminiService';
 import { Perfume } from '../types';
+import { saveImage, getImage } from '../services/dbService';
+import { useApiKey } from '../contexts/ApiKeyContext';
 
 interface FragranceImageProps {
   perfume: Perfume;
@@ -10,13 +12,11 @@ interface FragranceImageProps {
   className?: string;
 }
 
-// In-memory cache for generated images to avoid sessionStorage quota limits.
-const imageCache = new Map<string, string>();
-
 const FragranceImage: React.FC<FragranceImageProps> = ({ perfume, alt, className }) => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<boolean>(false);
   const [imageUrl, setImageUrl] = useState<string>('');
+  const { resetApiKey } = useApiKey();
   
   const cacheKey = `fragrance_image_${perfume.name}`;
 
@@ -24,26 +24,26 @@ const FragranceImage: React.FC<FragranceImageProps> = ({ perfume, alt, className
     let isCancelled = false;
 
     const generateAndCacheImage = async () => {
-      // Check in-memory cache
-      if (imageCache.has(cacheKey)) {
-        if (!isCancelled) {
-          setImageUrl(imageCache.get(cacheKey)!);
-          setIsLoading(false);
-        }
-        return;
-      }
-
-      // Generate new image if not in cache
+      setIsLoading(true);
       try {
+        const cachedImage = await getImage(cacheKey);
+        if (cachedImage && !isCancelled) {
+          setImageUrl(cachedImage);
+          return;
+        }
+
         const base64Data = await generateFragranceImage(perfume);
         if (!isCancelled) {
           const dataUrl = `data:image/png;base64,${base64Data}`;
           setImageUrl(dataUrl);
-          imageCache.set(cacheKey, dataUrl); // Cache in memory
+          await saveImage(cacheKey, dataUrl);
         }
       } catch (err) {
         if (!isCancelled) {
-          console.error(`Failed to generate image for ${perfume.name}`, err);
+          console.error(`Failed to generate or cache image for ${perfume.name}`, err);
+          if (err instanceof Error && err.message.includes('API key')) {
+            resetApiKey();
+          }
           setError(true);
         }
       } finally {
@@ -53,38 +53,40 @@ const FragranceImage: React.FC<FragranceImageProps> = ({ perfume, alt, className
       }
     };
 
-    const fetchImage = async () => {
+    const loadImage = async () => {
         setIsLoading(true);
         setError(false);
         setImageUrl('');
 
         if (perfume.imageUrl) {
-            const img = new Image();
-            img.src = perfume.imageUrl;
-            img.onload = () => {
+            try {
+                const img = new Image();
+                img.src = perfume.imageUrl;
+                await new Promise((resolve, reject) => {
+                    img.onload = resolve;
+                    img.onerror = reject;
+                });
                 if (!isCancelled) {
                     setImageUrl(perfume.imageUrl!);
                     setIsLoading(false);
                 }
-            };
-            img.onerror = () => {
-                if (!isCancelled) {
+            } catch (e) {
+                 if (!isCancelled) {
                     console.warn(`Official image for ${perfume.name} failed to load. Falling back to AI generation.`);
-                    generateAndCacheImage();
+                    await generateAndCacheImage();
                 }
-            };
+            }
         } else {
-            // No official URL, proceed to generate/cache logic
-            generateAndCacheImage();
+            await generateAndCacheImage();
         }
     };
 
-    fetchImage();
+    loadImage();
 
     return () => {
         isCancelled = true;
     };
-  }, [perfume, cacheKey]);
+  }, [perfume, cacheKey, resetApiKey]);
 
   if (isLoading) {
     return (

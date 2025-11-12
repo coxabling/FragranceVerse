@@ -51,5 +51,10 @@ export interface Wardrobe {
 
 declare global {
   interface Window {
+    // Fix: Centralize the aistudio type declaration here.
+    aistudio?: {
+      openSelectKey: () => Promise<void>;
+      hasSelectedApiKey: () => Promise<boolean>;
+    };
   }
 }
