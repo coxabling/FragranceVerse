@@ -11,8 +11,9 @@ import PerfumeCard from './components/PerfumeCard';
 import PerfumeDetail from './components/PerfumeDetail';
 import Profile from './components/Profile';
 import { Perfume, Wardrobe, WardrobeShelf } from './types';
+import Browse from './components/Browse';
 
-type View = 'home' | 'matchmaker' | 'visualizer' | 'community' | 'profile';
+type View = 'home' | 'matchmaker' | 'visualizer' | 'community' | 'profile' | 'browse';
 
 const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<View>('home');
@@ -202,6 +203,8 @@ const App: React.FC = () => {
         return <CommunityHub />;
       case 'profile':
         return <Profile wardrobe={userWardrobe} onPerfumeClick={handlePerfumeClick} />;
+      case 'browse':
+        return <Browse perfumes={filteredPerfumes} onPerfumeClick={handlePerfumeClick} searchTerm={searchTerm} totalPerfumes={perfumes.length} />;
       case 'home':
       default:
         return renderHomeContent();
