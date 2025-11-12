@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { LogoIcon } from './icons/LogoIcon';
 import { SearchIcon } from './icons/SearchIcon';
 
-type View = 'home' | 'matchmaker' | 'visualizer' | 'community' | 'profile' | 'browse';
+type View = 'home' | 'matchmaker' | 'visualizer' | 'community' | 'profile';
 
 interface HeaderProps {
   currentView: View;
@@ -17,7 +17,6 @@ const Header: React.FC<HeaderProps> = ({ currentView, setCurrentView, searchTerm
   
   const navItems = [
     { id: 'home', label: 'Home' },
-    { id: 'browse', label: 'Browse' },
     { id: 'matchmaker', label: 'AI Matchmaker' },
     { id: 'visualizer', label: 'Scent by Vibe' },
     { id: 'community', label: 'Community' },
@@ -26,8 +25,8 @@ const Header: React.FC<HeaderProps> = ({ currentView, setCurrentView, searchTerm
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setCurrentView('browse'); // Direct search to the browse page for results
-    setIsMenuOpen(false);
+    setCurrentView('home');
+    setIsMenuOpen(false); // Close mobile menu on search
   };
 
   const NavLink: React.FC<{ view: View, label: string }> = ({ view, label }) => (

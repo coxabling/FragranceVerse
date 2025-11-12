@@ -297,3 +297,43 @@ export const generateFragranceImage = async (perfume: Perfume): Promise<string> 
         handleApiError(error);
     }
 };
+
+export const generateVibeFragranceImage = async (perfume: Perfume, vibeImage: { base64Data: string; mimeType: string }): Promise<string> => {
+    // No caching here, as each image is unique to the vibe.
+    try {
+        const ai = getAiClient();
+        const allNotes = [...perfume.topNotes, ...perfume.middleNotes, ...perfume.baseNotes].slice(0, 5).join(', ');
+        
+        const vibeImagePart = {
+            inlineData: {
+                data: vibeImage.base64Data,
+                mimeType: vibeImage.mimeType,
+            },
+        };
+
+        const textPart = {
+            text: `This image sets the mood and aesthetic. Based on this vibe, create a professional, photorealistic product shot of a perfume bottle for "${perfume.name}" by ${perfume.brand}. The bottle should appear elegant and luxurious. The product shot should adopt the style, color palette, and overall atmosphere of the provided mood image, while subtly hinting at its key notes of ${allNotes}.`
+        };
+
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash-image',
+            contents: {
+                parts: [vibeImagePart, textPart],
+            },
+            config: {
+                responseModalities: [Modality.IMAGE],
+            },
+        });
+
+        const imageData = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
+
+        if (imageData) {
+            return `data:image/png;base64,${imageData}`;
+        }
+        
+        throw new Error("No image data found in the AI response for vibe image. It might have been blocked for safety reasons.");
+
+    } catch (error) {
+        handleApiError(error);
+    }
+};
