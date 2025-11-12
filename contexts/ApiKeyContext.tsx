@@ -1,24 +1,23 @@
 
-import React, { createContext, useContext } from 'react';
+import React from 'react';
 
-interface ApiKeyContextType {
-  resetApiKey: () => void;
-}
+/**
+ * This context has been cleared to remove all user-facing API key handling,
+ * in accordance with the project guidelines to rely on environment variables.
+ */
 
-const ApiKeyContext = createContext<ApiKeyContextType | undefined>(undefined);
-
-export const useApiKey = () => {
-  const context = useContext(ApiKeyContext);
-  if (!context) {
-    throw new Error('useApiKey must be used within an ApiKeyProvider');
-  }
-  return context;
+// A dummy provider that just renders its children.
+export const ApiKeyProvider: React.FC<{ children: React.ReactNode; [key: string]: any }> = ({ children }) => {
+  return <>{children}</>;
 };
 
-export const ApiKeyProvider: React.FC<{ children: React.ReactNode, resetApiKey: () => void }> = ({ children, resetApiKey }) => {
-  return (
-    <ApiKeyContext.Provider value={{ resetApiKey }}>
-      {children}
-    </ApiKeyContext.Provider>
-  );
+// A dummy hook that provides a no-op function.
+export const useApiKey = () => {
+  return {
+    resetApiKey: () => {
+      console.warn(
+        'resetApiKey was called, but user-facing API key management is disabled.'
+      );
+    },
+  };
 };

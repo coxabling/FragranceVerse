@@ -1,7 +1,5 @@
-
-import { GoogleGenAI, Type, Modality } from "@google/genai";
+import { GoogleGenAI, Type } from "@google/genai";
 import { Perfume } from '../types';
-import { saveImage, getImage } from './dbService';
 
 // In-memory caches
 const recommendationsCache = new Map<string, Perfume[]>();
@@ -12,11 +10,7 @@ const enhancePostCache = new Map<string, string>();
 
 // Create a new client for each request, assuming API_KEY is in the environment.
 const getAiClient = () => {
-  const apiKey = process.env.API_KEY;
-  if (!apiKey) {
-    throw new Error("An API Key must be set when running in a browser");
-  }
-  return new GoogleGenAI({ apiKey });
+  return new GoogleGenAI({ apiKey: process.env.API_KEY });
 };
 
 // Centralized error handler
@@ -252,87 +246,6 @@ export const getSimilarFragrances = async (perfume: Perfume): Promise<Omit<Perfu
         const recommendations = parsed.recommendations || parsed;
         similarFragrancesCache.set(cacheKey, recommendations);
         return recommendations;
-    } catch (error) {
-        handleApiError(error);
-    }
-};
-
-export const generateFragranceImage = async (perfume: Perfume): Promise<string> => {
-    const cacheKey = `fragrance_image_${perfume.name}`;
-    try {
-        const cachedImage = await getImage(cacheKey);
-        if (cachedImage) {
-            return cachedImage;
-        }
-
-        const ai = getAiClient();
-        const allNotes = [...perfume.topNotes, ...perfume.middleNotes, ...perfume.baseNotes].slice(0, 5).join(', ');
-        const prompt = `A professional, photorealistic product shot of a perfume bottle for "${perfume.name}" by ${perfume.brand}.
-        The style is elegant, luxurious, and minimalist.
-        The bottle is the central focus, appearing chic and appealing.
-        The background is clean and soft-focus, subtly evoking its key notes of ${allNotes}.
-        The lighting is bright and airy.`;
-
-        const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash-image',
-            contents: {
-                parts: [{ text: prompt }],
-            },
-            config: {
-                responseModalities: [Modality.IMAGE],
-            },
-        });
-        
-        const imageData = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
-
-        if (imageData) {
-            const dataUrl = `data:image/png;base64,${imageData}`;
-            await saveImage(cacheKey, dataUrl);
-            return dataUrl;
-        }
-        
-        throw new Error("No image data found in the AI response. It might have been blocked for safety reasons.");
-
-    } catch (error) {
-        handleApiError(error);
-    }
-};
-
-export const generateVibeFragranceImage = async (perfume: Perfume, vibeImage: { base64Data: string; mimeType: string }): Promise<string> => {
-    // No caching here, as each image is unique to the vibe.
-    try {
-        const ai = getAiClient();
-        const allNotes = [...perfume.topNotes, ...perfume.middleNotes, ...perfume.baseNotes].slice(0, 5).join(', ');
-        
-        const vibeImagePart = {
-            inlineData: {
-                data: vibeImage.base64Data,
-                mimeType: vibeImage.mimeType,
-            },
-        };
-
-        const textPart = {
-            text: `This image sets the mood and aesthetic. Based on this vibe, create a professional, photorealistic product shot of a perfume bottle for "${perfume.name}" by ${perfume.brand}. The bottle should appear elegant and luxurious. The product shot should adopt the style, color palette, and overall atmosphere of the provided mood image, while subtly hinting at its key notes of ${allNotes}.`
-        };
-
-        const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash-image',
-            contents: {
-                parts: [vibeImagePart, textPart],
-            },
-            config: {
-                responseModalities: [Modality.IMAGE],
-            },
-        });
-
-        const imageData = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
-
-        if (imageData) {
-            return `data:image/png;base64,${imageData}`;
-        }
-        
-        throw new Error("No image data found in the AI response for vibe image. It might have been blocked for safety reasons.");
-
     } catch (error) {
         handleApiError(error);
     }

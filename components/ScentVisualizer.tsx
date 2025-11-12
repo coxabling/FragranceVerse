@@ -1,7 +1,6 @@
-
 import React, { useState, useCallback, useRef } from 'react';
 import { Perfume } from '../types';
-import { getFragranceRecommendationsByVibe, generateVibeFragranceImage } from '../services/geminiService';
+import { getFragranceRecommendationsByVibe } from '../services/geminiService';
 import { fileToBase64Parts } from '../utils/imageUtils';
 import PerfumeCard from './PerfumeCard';
 import LoadingSpinner from './LoadingSpinner';
@@ -69,23 +68,7 @@ const ScentVisualizer: React.FC<ScentVisualizerProps> = ({ onPerfumeClick }) => 
         try {
             const { base64Data, mimeType } = await fileToBase64Parts(imageFile);
             const perfumeRecommendations = await getFragranceRecommendationsByVibe(base64Data, mimeType);
-
-            // Generate custom, vibe-matched images for each recommendation
-            const perfumesWithImages = await Promise.all(
-                perfumeRecommendations.map(async (perfume) => {
-                    try {
-                        const imageUrl = await generateVibeFragranceImage(perfume, { base64Data, mimeType });
-                        return { ...perfume, imageUrl }; // Add the generated imageUrl
-                    } catch (imageError) {
-                        console.error(`Failed to generate image for ${perfume.name}`, imageError);
-                        // If image generation fails for one, return the perfume without an image.
-                        // The <FragranceImage> component has its own fallback logic.
-                        return perfume;
-                    }
-                })
-            );
-            
-            setRecommendations(perfumesWithImages);
+            setRecommendations(perfumeRecommendations);
         } catch (err) {
             const errorMessage = err instanceof Error ? err.message : "An unknown error occurred.";
             setError(errorMessage);
