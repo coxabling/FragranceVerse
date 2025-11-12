@@ -335,3 +335,10 @@ export const commonNotes: string[] = [
     "Patchouli", "Musk", "Amber", "Vetiver", "Lavender", "Lemon",
     "Orange Blossom", "Oud", "Tobacco", "Leather", "Iris", "Gardenia"
 ];
+
+export const occasions: { name: string; id: 'everyday' | 'office' | 'night' | 'event' }[] = [
+    { name: 'Everyday', id: 'everyday' },
+    { name: 'Office', id: 'office' },
+    { name: 'Date Night', id: 'night' },
+    { name: 'Special Event', id: 'event' },
+];

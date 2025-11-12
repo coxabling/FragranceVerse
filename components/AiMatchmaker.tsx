@@ -1,191 +1,283 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { Perfume } from '../types';
-import { getFragranceRecommendations, getFragranceRecommendationsByVibe } from '../services/geminiService';
+import { getFragranceRecommendations } from '../services/geminiService';
 import PerfumeCard from './PerfumeCard';
 import { SparklesIcon } from './icons/SparklesIcon';
-import { UploadIcon } from './icons/UploadIcon';
 import LoadingSpinner from './LoadingSpinner';
-import { commonNotes } from '../constants';
+import { commonNotes, scentFamilies, occasions } from '../constants';
+import { SunIcon } from './icons/SunIcon';
+import { BriefcaseIcon } from './icons/BriefcaseIcon';
+import { MoonIcon } from './icons/MoonIcon';
+import { GiftIcon } from './icons/GiftIcon';
+import { ArrowLeftIcon } from './icons/ArrowLeftIcon';
 
-type MatchmakerTab = 'mood' | 'scents' | 'vibe';
+const TOTAL_STEPS = 5;
+
+interface QuizAnswers {
+  families: string[];
+  occasion: string;
+  likedNotes: string[];
+  dislikedNotes: string[];
+  vibe: string;
+}
+
+const initialAnswers: QuizAnswers = {
+  families: [],
+  occasion: '',
+  likedNotes: [],
+  dislikedNotes: [],
+  vibe: '',
+};
 
 const AiMatchmaker: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<MatchmakerTab>('mood');
-  const [mood, setMood] = useState('');
-  const [selectedNotes, setSelectedNotes] = useState<string[]>([]);
-  const [image, setImage] = useState<{ file: File; dataUrl: string } | null>(null);
+  const [quizStep, setQuizStep] = useState(0); // 0 = start screen
+  const [quizAnswers, setQuizAnswers] = useState<QuizAnswers>(initialAnswers);
   const [recommendations, setRecommendations] = useState<Perfume[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  const handleNoteToggle = (note: string) => {
-    setSelectedNotes(prev =>
-      prev.includes(note) ? prev.filter(n => n !== note) : [...prev, note]
-    );
+  
+  const occasionIcons: Record<string, React.ReactNode> = {
+    everyday: <SunIcon className="w-10 h-10 mb-2" />,
+    office: <BriefcaseIcon className="w-10 h-10 mb-2" />,
+    night: <MoonIcon className="w-10 h-10 mb-2" />,
+    event: <GiftIcon className="w-10 h-10 mb-2" />,
   };
   
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImage({ file, dataUrl: reader.result as string });
-        setError(null);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
   const handleFindMatch = useCallback(async () => {
-    let prompt = '';
-    
     setIsLoading(true);
     setError(null);
     setRecommendations([]);
 
+    let prompt = "Act as an expert fragrance sommelier. I'm looking for a new perfume based on these preferences:\n";
+    if (quizAnswers.families.length > 0) prompt += `- Scent Families I Like: ${quizAnswers.families.join(', ')}\n`;
+    if (quizAnswers.occasion) prompt += `- Intended Occasion: ${quizAnswers.occasion}\n`;
+    if (quizAnswers.likedNotes.length > 0) prompt += `- Notes I Enjoy: ${quizAnswers.likedNotes.join(', ')}\n`;
+    if (quizAnswers.dislikedNotes.length > 0) prompt += `- Notes to Avoid: ${quizAnswers.dislikedNotes.join(', ')}\n`;
+    if (quizAnswers.vibe) prompt += `- Desired Vibe/Feeling: "${quizAnswers.vibe}"\n`;
+    prompt += "\nRecommend 3 real-world, well-known perfumes that fit this profile. For each, provide its name, brand, a poetic one-sentence description, and three separate lists for its key top, middle, and base notes. Also include a rating from 1 to 5 for both longevity and sillage.";
+
     try {
-      let results: Perfume[];
-      if (activeTab === 'mood') {
-        if (!mood.trim()) {
-            setError("Please describe your mood or desired scent.");
-            setIsLoading(false);
-            return;
-        }
-        prompt = mood;
-        results = await getFragranceRecommendations(prompt);
-      } else if (activeTab === 'scents') {
-        if (selectedNotes.length === 0) {
-            setError("Please select at least one scent note.");
-            setIsLoading(false);
-            return;
-        }
-        prompt = `A fragrance featuring the notes: ${selectedNotes.join(', ')}.`;
-        results = await getFragranceRecommendations(prompt);
-      } else if (activeTab === 'vibe') {
-        if (!image) {
-          setError("Please upload an image.");
-          setIsLoading(false);
-          return;
-        }
-        const base64Data = image.dataUrl.split(',')[1];
-        const mimeType = image.file.type;
-        results = await getFragranceRecommendationsByVibe(base64Data, mimeType);
-      } else {
-        return;
-      }
+      const results = await getFragranceRecommendations(prompt);
       setRecommendations(results);
+      setQuizStep(TOTAL_STEPS + 1); // Move to results screen
     } catch (err) {
       setError(err instanceof Error ? err.message : "An unknown error occurred.");
     } finally {
       setIsLoading(false);
     }
-  }, [mood, activeTab, selectedNotes, image]);
+  }, [quizAnswers]);
   
-  const renderTabContent = () => {
-    switch (activeTab) {
-      case 'mood':
+  const handleStartOver = () => {
+      setQuizAnswers(initialAnswers);
+      setRecommendations([]);
+      setError(null);
+      setQuizStep(0);
+  }
+
+  const handleUpdateAnswer = <K extends keyof QuizAnswers>(key: K, value: QuizAnswers[K]) => {
+      setQuizAnswers(prev => ({...prev, [key]: value}));
+  };
+  
+  const handleToggleListAnswer = (key: 'families' | 'likedNotes' | 'dislikedNotes', value: string) => {
+    const currentList = quizAnswers[key] as string[];
+    const newList = currentList.includes(value) ? currentList.filter(item => item !== value) : [...currentList, value];
+    handleUpdateAnswer(key, newList as any);
+  };
+  
+  const progress = useMemo(() => {
+    if (quizStep === 0 || quizStep > TOTAL_STEPS) return 0;
+    return (quizStep / TOTAL_STEPS) * 100;
+  }, [quizStep]);
+
+  const renderQuizStep = () => {
+    switch (quizStep) {
+      case 1: // Scent Families
         return (
-          <div>
-            <label htmlFor="mood" className="block text-lg font-serif text-deep-taupe mb-2">Describe your current mood or desired feeling</label>
-            <textarea
-              id="mood"
-              value={mood}
-              onChange={(e) => setMood(e.target.value)}
-              placeholder="e.g., 'A confident and mysterious evening vibe' or 'A fresh, energetic scent for sunny days'"
-              rows={4}
-              className="w-full p-4 border border-champagne-gold rounded-lg focus:ring-2 focus:ring-rose-hue focus:border-rose-hue transition-colors duration-300 bg-pearl-white"
-            />
-          </div>
-        );
-      case 'scents':
-        return <div className="w-full">
-            <label className="block text-lg font-serif text-deep-taupe mb-4 text-center">Select your favorite scent notes</label>
-            <div className="flex flex-wrap justify-center gap-3">
-                {commonNotes.map(note => (
-                    <button
-                        key={note}
-                        onClick={() => handleNoteToggle(note)}
-                        className={`px-4 py-2 rounded-full border-2 transition-colors duration-200 font-sans
-                            ${selectedNotes.includes(note) 
-                                ? 'bg-rose-hue text-pearl-white border-rose-hue' 
-                                : 'bg-pearl-white text-deep-taupe border-champagne-gold hover:border-rose-hue/50'
-                            }`}
-                    >
-                        {note}
-                    </button>
-                ))}
+          <>
+            <h2 className="text-2xl md:text-3xl font-serif text-deep-taupe mb-2 text-center">Which scent families are you drawn to?</h2>
+            <p className="text-center text-deep-taupe/80 mb-8">Select one or more that appeal to you.</p>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              {scentFamilies.map(family => (
+                <button
+                  key={family.name}
+                  onClick={() => handleToggleListAnswer('families', family.name)}
+                  className={`p-4 md:p-6 rounded-lg text-center font-serif text-lg text-deep-taupe border-2 transition-all duration-200 transform hover:scale-105
+                    ${quizAnswers.families.includes(family.name) ? 'border-rose-hue bg-rose-hue/20' : 'bg-pearl-white/50 border-champagne-gold hover:border-rose-hue/50'}`}
+                >
+                  {family.name}
+                </button>
+              ))}
             </div>
-        </div>;
-      case 'vibe':
+          </>
+        );
+      case 2: // Occasion
          return (
-            <div className="text-center w-full flex flex-col items-center">
-                <label htmlFor="vibe-upload" className="cursor-pointer block w-full max-w-md p-8 border-2 border-dashed border-champagne-gold rounded-lg hover:bg-champagne-gold/20 transition-colors">
-                    <UploadIcon className="w-12 h-12 text-rose-hue mx-auto mb-4"/>
-                    <p className="font-serif text-lg">Find a fragrance from a photo</p>
-                    <p className="text-sm text-deep-taupe/80">Click to select an image that captures your desired vibe.</p>
-                </label>
-                <input id="vibe-upload" type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
-                {image && (
-                    <div className="mt-4 relative">
-                        <img src={image.dataUrl} alt="Preview" className="max-h-40 mx-auto rounded-lg shadow-md" />
-                        <button onClick={() => setImage(null)} className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full h-6 w-6 flex items-center justify-center text-sm font-bold">&times;</button>
-                    </div>
-                )}
-            </div>
+          <>
+            <h2 className="text-2xl md:text-3xl font-serif text-deep-taupe mb-2 text-center">When will you wear this fragrance?</h2>
+            <p className="text-center text-deep-taupe/80 mb-8">Pick the primary occasion you have in mind.</p>
+             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+               {occasions.map(occasion => (
+                 <button
+                   key={occasion.id}
+                   onClick={() => handleUpdateAnswer('occasion', occasion.name)}
+                   className={`p-4 rounded-lg flex flex-col items-center justify-center font-serif text-lg text-deep-taupe border-2 transition-all duration-200 transform hover:scale-105
+                     ${quizAnswers.occasion === occasion.name ? 'border-rose-hue bg-rose-hue/20' : 'bg-pearl-white/50 border-champagne-gold hover:border-rose-hue/50'}`}
+                 >
+                   {occasionIcons[occasion.id]}
+                   {occasion.name}
+                 </button>
+               ))}
+             </div>
+          </>
         );
+      case 3: // Liked Notes
+        return (
+          <>
+            <h2 className="text-2xl md:text-3xl font-serif text-deep-taupe mb-2 text-center">Which notes do you enjoy?</h2>
+            <p className="text-center text-deep-taupe/80 mb-8">Choose as many as you like.</p>
+            <div className="flex flex-wrap justify-center gap-3">
+              {commonNotes.map(note => (
+                <button
+                  key={note}
+                  onClick={() => handleToggleListAnswer('likedNotes', note)}
+                  className={`px-4 py-2 rounded-full border-2 transition-colors duration-200 font-sans
+                    ${quizAnswers.likedNotes.includes(note) ? 'bg-rose-hue text-pearl-white border-rose-hue' : 'bg-pearl-white text-deep-taupe border-champagne-gold hover:border-rose-hue/50'}`}
+                >
+                  {note}
+                </button>
+              ))}
+            </div>
+          </>
+        );
+      case 4: // Disliked Notes
+        const availableDislikeNotes = commonNotes.filter(note => !quizAnswers.likedNotes.includes(note));
+        return (
+          <>
+            <h2 className="text-2xl md:text-3xl font-serif text-deep-taupe mb-2 text-center">Are there any notes you want to avoid?</h2>
+            <p className="text-center text-deep-taupe/80 mb-8">This helps us narrow down the options.</p>
+            <div className="flex flex-wrap justify-center gap-3">
+              {availableDislikeNotes.map(note => (
+                <button
+                  key={note}
+                  onClick={() => handleToggleListAnswer('dislikedNotes', note)}
+                  className={`px-4 py-2 rounded-full border-2 transition-colors duration-200 font-sans
+                    ${quizAnswers.dislikedNotes.includes(note) ? 'bg-deep-taupe text-pearl-white border-deep-taupe' : 'bg-pearl-white text-deep-taupe border-champagne-gold hover:border-deep-taupe/50'}`}
+                >
+                  {note}
+                </button>
+              ))}
+            </div>
+          </>
+        );
+      case 5: // Vibe
+        return (
+          <>
+            <h2 className="text-2xl md:text-3xl font-serif text-deep-taupe mb-2 text-center">Describe the vibe you're going for.</h2>
+            <p className="text-center text-deep-taupe/80 mb-8">Use a few words or a sentence.</p>
+            <textarea
+              value={quizAnswers.vibe}
+              onChange={(e) => handleUpdateAnswer('vibe', e.target.value)}
+              placeholder="e.g., 'Confident and mysterious' or 'A fresh, energetic scent for sunny days'"
+              rows={4}
+              className="w-full max-w-lg mx-auto block p-4 border border-champagne-gold rounded-lg focus:ring-2 focus:ring-rose-hue focus:border-rose-hue transition-colors duration-300 bg-pearl-white"
+            />
+          </>
+        );
+      default:
+        return null;
     }
   };
-
-  const isButtonDisabled = isLoading || (activeTab === 'mood' && !mood.trim()) || (activeTab === 'scents' && selectedNotes.length === 0) || (activeTab === 'vibe' && !image);
+  
+  if (quizStep === 0) {
+    return (
+       <div className="py-16 md:py-24 bg-pearl-white">
+          <div className="container mx-auto px-4 text-center">
+            <h1 className="text-4xl md:text-5xl font-serif text-deep-taupe">AI Fragrance Matchmaker</h1>
+            <p className="mt-4 text-lg text-deep-taupe/80 max-w-3xl mx-auto">Answer a few questions to let our AI sommelier find your next signature scent.</p>
+             <div className="mt-10">
+                <button
+                  onClick={() => setQuizStep(1)}
+                  className="bg-deep-taupe text-pearl-white font-bold py-4 px-10 rounded-full text-lg font-sans hover:bg-rose-hue hover:text-deep-taupe transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center justify-center mx-auto"
+                >
+                  <SparklesIcon className="w-6 h-6 mr-3" />
+                  Start the Quiz
+                </button>
+            </div>
+          </div>
+       </div>
+    );
+  }
 
   return (
     <div className="py-16 md:py-24 bg-pearl-white">
       <div className="container mx-auto px-4">
-        <div className="text-center mb-12">
-          <h1 className="text-4xl md:text-5xl font-serif text-deep-taupe">AI Fragrance Matchmaker</h1>
-          <p className="mt-4 text-lg text-deep-taupe/80 max-w-3xl mx-auto">Let our AI sommelier find your next signature scent. Choose your method of discovery below.</p>
-        </div>
-        
-        <div className="max-w-4xl mx-auto bg-white/50 shadow-lg rounded-2xl p-6 md:p-8 backdrop-blur-sm border border-champagne-gold/50">
-          <div className="border-b border-champagne-gold mb-6 flex justify-center space-x-2 md:space-x-4">
-            {(['mood', 'scents', 'vibe'] as MatchmakerTab[]).map(tab => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={`capitalize py-3 px-4 md:px-6 font-serif text-lg transition-all duration-300 border-b-2 ${activeTab === tab ? 'border-rose-hue text-deep-taupe' : 'border-transparent text-deep-taupe/60 hover:border-rose-hue/50 hover:text-deep-taupe'}`}
-              >
-                {tab === 'vibe' ? 'By Vibe' : tab === 'scents' ? 'By Scent' : 'By Mood'}
-              </button>
-            ))}
-          </div>
-          
-          <div className="mb-6 min-h-[150px] flex items-center justify-center">
-            {renderTabContent()}
-          </div>
-          
-          <div className="text-center">
-            <button
-              onClick={handleFindMatch}
-              disabled={isButtonDisabled}
-              className="bg-deep-taupe text-pearl-white font-bold py-3 px-8 rounded-full text-lg font-sans hover:bg-rose-hue hover:text-deep-taupe transition-all duration-300 transform hover:scale-105 shadow-lg disabled:bg-gray-400 disabled:cursor-not-allowed disabled:scale-100 flex items-center justify-center mx-auto"
-            >
-              <SparklesIcon className="w-5 h-5 mr-2" />
-              {isLoading ? 'Analyzing...' : 'Find My Match'}
-            </button>
-          </div>
-        </div>
+        {quizStep <= TOTAL_STEPS && (
+            <div className="max-w-4xl mx-auto bg-white/50 shadow-lg rounded-2xl p-6 md:p-8 backdrop-blur-sm border border-champagne-gold/50">
+                <div className="mb-8">
+                    <div className="w-full bg-champagne-gold rounded-full h-2.5">
+                        <div className="bg-rose-hue h-2.5 rounded-full transition-all duration-500" style={{ width: `${progress}%` }}></div>
+                    </div>
+                </div>
 
-        {error && <p className="text-center text-red-600 mt-6">{error}</p>}
+                <div className="min-h-[300px] flex flex-col justify-center">
+                    {renderQuizStep()}
+                </div>
+
+                <div className="flex justify-between items-center mt-8">
+                    <button
+                        onClick={() => setQuizStep(s => s - 1)}
+                        className="flex items-center text-deep-taupe hover:text-rose-hue font-bold font-sans transition-colors"
+                        >
+                        <ArrowLeftIcon className="w-5 h-5 mr-2" />
+                        Back
+                    </button>
+                    {quizStep < TOTAL_STEPS ? (
+                        <button
+                            onClick={() => setQuizStep(s => s + 1)}
+                            className="bg-deep-taupe text-pearl-white font-bold py-3 px-8 rounded-full text-lg font-sans hover:bg-rose-hue hover:text-deep-taupe transition-all duration-300 transform hover:scale-105 shadow-lg"
+                        >
+                            Next
+                        </button>
+                    ) : (
+                        <button
+                            onClick={handleFindMatch}
+                            className="bg-deep-taupe text-pearl-white font-bold py-3 px-8 rounded-full text-lg font-sans hover:bg-rose-hue hover:text-deep-taupe transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center justify-center mx-auto"
+                        >
+                            <SparklesIcon className="w-5 h-5 mr-2" />
+                            Find My Match
+                        </button>
+                    )}
+                </div>
+            </div>
+        )}
         
         {isLoading && <LoadingSpinner />}
 
-        {recommendations.length > 0 && (
-          <div className="mt-16">
-            <h2 className="text-3xl font-serif text-center mb-8">Your Personalized Recommendations</h2>
+        {error && 
+            <div className="text-center mt-6">
+                <p className="text-red-600 bg-red-100 p-4 rounded-lg max-w-2xl mx-auto">{error}</p>
+                 <button onClick={handleStartOver} className="mt-4 font-bold text-deep-taupe hover:underline">Start Over</button>
+            </div>
+        }
+        
+        {recommendations.length > 0 && quizStep > TOTAL_STEPS && (
+          <div className="mt-16 animate-fade-in">
+            <div className="text-center">
+                <h2 className="text-3xl md:text-4xl font-serif text-center mb-4">Your AI-Curated Matches</h2>
+                <p className="text-deep-taupe/80 mb-8">Based on your preferences, we think you'll love these.</p>
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
               {recommendations.map((perfume, index) => (
                 <PerfumeCard key={index} perfume={perfume} onClick={() => { /* No-op, detail view not accessible from here */ }} />
               ))}
+            </div>
+            <div className="text-center mt-12">
+                 <button 
+                    onClick={handleStartOver}
+                    className="bg-pearl-white text-deep-taupe font-bold py-3 px-8 rounded-full text-lg font-sans hover:bg-rose-hue/50 transition-all duration-300 border-2 border-deep-taupe shadow-md"
+                >
+                    Start a New Quiz
+                </button>
             </div>
           </div>
         )}

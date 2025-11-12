@@ -4,6 +4,7 @@ import { HeartIcon } from './icons/HeartIcon';
 import { ChatIcon } from './icons/ChatIcon';
 import { SparklesIcon } from './icons/SparklesIcon';
 import { enhancePost } from '../services/geminiService';
+import { ShareIcon } from './icons/ShareIcon';
 
 interface Post {
     author: string;
@@ -77,6 +78,32 @@ const CommunityHub: React.FC = () => {
         setNewPost('');
     };
 
+    const handleShare = async (post: Post) => {
+        const shareData = {
+            title: `A post by ${post.author} on FragranceVerse`,
+            text: post.content,
+            url: window.location.href, // Use current URL as a placeholder
+        };
+
+        if (navigator.share) {
+            try {
+                await navigator.share(shareData);
+            } catch (error) {
+                console.error('Error sharing post:', error);
+                // User might have cancelled the share, so no alert needed.
+            }
+        } else {
+            // Fallback for browsers without the Web Share API
+            try {
+                await navigator.clipboard.writeText(`${shareData.title}\n\n"${shareData.text}"`);
+                alert('Post content copied to clipboard!');
+            } catch (err) {
+                console.error('Failed to copy to clipboard:', err);
+                alert('Sharing is not supported in your browser.');
+            }
+        }
+    };
+
     return (
         <div className="py-16 md:py-24 bg-pearl-white">
             <div className="container mx-auto px-4">
@@ -139,6 +166,13 @@ const CommunityHub: React.FC = () => {
                                 <button className="flex items-center space-x-2 hover:text-rose-hue transition-colors">
                                     <ChatIcon className="w-5 h-5" />
                                     <span>{post.comments} Comments</span>
+                                </button>
+                                <button
+                                    onClick={() => handleShare(post)}
+                                    className="flex items-center space-x-2 hover:text-rose-hue transition-colors"
+                                >
+                                    <ShareIcon className="w-5 h-5" />
+                                    <span>Share</span>
                                 </button>
                             </div>
                         </div>
