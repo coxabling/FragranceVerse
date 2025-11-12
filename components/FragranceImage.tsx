@@ -10,6 +10,9 @@ interface FragranceImageProps {
   className?: string;
 }
 
+// In-memory cache for generated images to avoid sessionStorage quota limits.
+const imageCache = new Map<string, string>();
+
 const FragranceImage: React.FC<FragranceImageProps> = ({ perfume, alt, className }) => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<boolean>(false);
@@ -19,6 +22,36 @@ const FragranceImage: React.FC<FragranceImageProps> = ({ perfume, alt, className
 
   useEffect(() => {
     let isCancelled = false;
+
+    const generateAndCacheImage = async () => {
+      // Check in-memory cache
+      if (imageCache.has(cacheKey)) {
+        if (!isCancelled) {
+          setImageUrl(imageCache.get(cacheKey)!);
+          setIsLoading(false);
+        }
+        return;
+      }
+
+      // Generate new image if not in cache
+      try {
+        const base64Data = await generateFragranceImage(perfume);
+        if (!isCancelled) {
+          const dataUrl = `data:image/png;base64,${base64Data}`;
+          setImageUrl(dataUrl);
+          imageCache.set(cacheKey, dataUrl); // Cache in memory
+        }
+      } catch (err) {
+        if (!isCancelled) {
+          console.error(`Failed to generate image for ${perfume.name}`, err);
+          setError(true);
+        }
+      } finally {
+        if (!isCancelled) {
+          setIsLoading(false);
+        }
+      }
+    };
 
     const fetchImage = async () => {
         setIsLoading(true);
@@ -36,48 +69,13 @@ const FragranceImage: React.FC<FragranceImageProps> = ({ perfume, alt, className
             };
             img.onerror = () => {
                 if (!isCancelled) {
-                    console.error(`Failed to load image for ${perfume.name} from URL: ${perfume.imageUrl}`);
-                    setError(true);
-                    setIsLoading(false);
+                    console.warn(`Official image for ${perfume.name} failed to load. Falling back to AI generation.`);
+                    generateAndCacheImage();
                 }
             };
-            return;
-        }
-
-        // Fallback to AI generation
-        try {
-            const cachedImage = sessionStorage.getItem(cacheKey);
-            if (cachedImage) {
-                if (!isCancelled) {
-                    setImageUrl(cachedImage);
-                    setIsLoading(false);
-                }
-                return;
-            }
-        } catch (e) {
-            console.warn("Could not access session storage", e);
-        }
-
-        try {
-            const base64Data = await generateFragranceImage(perfume);
-            if (!isCancelled) {
-                const dataUrl = `data:image/png;base64,${base64Data}`;
-                setImageUrl(dataUrl);
-                try {
-                    sessionStorage.setItem(cacheKey, dataUrl);
-                } catch (e) {
-                    console.warn("Could not write to session storage", e);
-                }
-            }
-        } catch (err) {
-            if (!isCancelled) {
-                console.error(`Failed to generate image for ${perfume.name}`, err);
-                setError(true);
-            }
-        } finally {
-            if (!isCancelled) {
-                setIsLoading(false);
-            }
+        } else {
+            // No official URL, proceed to generate/cache logic
+            generateAndCacheImage();
         }
     };
 
