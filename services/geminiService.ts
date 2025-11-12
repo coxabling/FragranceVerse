@@ -14,7 +14,6 @@ const enhancePostCache = new Map<string, string>();
 const getAiClient = () => {
   const apiKey = process.env.API_KEY;
   if (!apiKey) {
-    // This will be caught by handleApiError and transformed into 'Invalid API key'
     throw new Error("An API Key must be set when running in a browser");
   }
   return new GoogleGenAI({ apiKey });
@@ -24,11 +23,6 @@ const getAiClient = () => {
 const handleApiError = (error: unknown): never => {
   console.error("Error calling Gemini API:", error);
   if (error instanceof Error) {
-    const message = error.message.toLowerCase();
-    // Check for specific API key-related error messages from the Gemini API
-    if (message.includes('api key not valid') || message.includes('api key must be set')) {
-      throw new Error('Invalid API key');
-    }
     throw new Error(`Failed to get a response from the AI: ${error.message}`);
   }
   throw new Error("An unknown error occurred while contacting the AI service.");
@@ -83,6 +77,9 @@ export const getFragranceRecommendations = async (prompt: string): Promise<Perfu
     });
 
     const jsonString = response.text;
+    if (!jsonString) {
+      throw new Error("Received an empty response from the AI.");
+    }
     const parsed = JSON.parse(jsonString);
     const recommendationsWithReviews = (parsed.recommendations || parsed).map((p: Omit<Perfume, 'reviews' | 'likes' | 'dislikes'>) => ({
         ...p,
@@ -159,6 +156,9 @@ export const getFragranceRecommendationsByVibe = async (base64Data: string, mime
     });
 
     const jsonString = response.text;
+    if (!jsonString) {
+      throw new Error("Received an empty response from the AI.");
+    }
     const parsed = JSON.parse(jsonString);
     const recommendationsWithExtras = (parsed.recommendations || parsed).map((p: Omit<Perfume, 'reviews' | 'likes' | 'dislikes'>) => ({
         ...p,
@@ -190,7 +190,11 @@ export const enhancePost = async (text: string): Promise<string> => {
             model: "gemini-2.5-flash",
             contents: `Rewrite the following user post about perfume to be more poetic, descriptive, and engaging, in the style of a fragrance expert. Keep the core meaning intact. User post: "${text}"`,
         });
+
         const enhancedText = response.text;
+        if (!enhancedText) {
+          throw new Error("Received an empty response from the AI.");
+        }
         enhancePostCache.set(cacheKey, enhancedText);
         return enhancedText;
     } catch (error) {
@@ -241,6 +245,9 @@ export const getSimilarFragrances = async (perfume: Perfume): Promise<Omit<Perfu
         });
 
         const jsonString = response.text;
+        if (!jsonString) {
+          throw new Error("Received an empty response from the AI.");
+        }
         const parsed = JSON.parse(jsonString);
         const recommendations = parsed.recommendations || parsed;
         similarFragrancesCache.set(cacheKey, recommendations);
@@ -276,13 +283,15 @@ export const generateFragranceImage = async (perfume: Perfume): Promise<string> 
             },
         });
         
-        if (response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data) {
-            const dataUrl = `data:image/png;base64,${response.candidates[0].content.parts[0].inlineData.data}`;
+        const imageData = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
+
+        if (imageData) {
+            const dataUrl = `data:image/png;base64,${imageData}`;
             await saveImage(cacheKey, dataUrl);
             return dataUrl;
         }
         
-        throw new Error("No image data found in the AI response.");
+        throw new Error("No image data found in the AI response. It might have been blocked for safety reasons.");
 
     } catch (error) {
         handleApiError(error);

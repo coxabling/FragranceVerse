@@ -49,13 +49,3 @@ export interface Wardrobe {
   want: Perfume[];
   tried: Perfume[];
 }
-
-declare global {
-  interface AIStudio {
-    hasSelectedApiKey: () => Promise<boolean>;
-    openSelectKey: () => Promise<void>;
-  }
-  interface Window {
-    aistudio?: AIStudio;
-  }
-}
