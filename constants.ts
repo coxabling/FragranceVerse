@@ -1,3 +1,4 @@
+
 import { Perfume, ScentFamily } from './types';
 
 export const featuredPerfumes: Perfume[] = [
@@ -281,6 +282,81 @@ export const featuredPerfumes: Perfume[] = [
         { author: 'TheAlchemist', rating: 4, comment: 'The concept is fascinating. It\'s a very clean, "your-skin-but-better" scent. Whether it\'s the pheromones or just a great composition, it\'s undeniably intriguing and gets noticed.', date: '2023-10-18' },
     ],
     clones: []
+  },
+  {
+    name: 'Accento Overdose Pride Edition',
+    brand: 'Xerjoff',
+    description: 'An explosion of colour and confidence, this intensely rich and radiant fragrance celebrates freedom and inclusion with fruity, green top notes, a fresh heart of eucalyptus, and an alluring base of jasmine and rose.',
+    topNotes: ['Fruity Notes', 'Aldehydes', 'Green Notes'],
+    middleNotes: ['Bulgarian Rose', 'Egyptian Jasmine', 'Lily-of-the-Valley'],
+    baseNotes: ['Eucalyptus', 'Pine'],
+    imageUrl: 'https://fimgs.net/mdimg/perfume/o.74630.jpg',
+    family: 'Floral Green',
+    longevity: 1,
+    sillage: 1,
+    likes: 29,
+    dislikes: 261,
+    isVerified: false,
+    amazonSearchTerm: 'Accento Overdose Pride Edition Xerjoff',
+    reviews: [
+        { author: 'ckorp8', rating: 4, comment: 'I bought this for its bottle which looks very lovely indeed. The scent, however, really leaves a lot to be desired. After a long while the rose finally appeared with some sweet accompanying note. Then the overall scent became much better, upping it to a like.', date: '2024-02-10' },
+        { author: 'Jezur', rating: 1, comment: 'Genuinely thought this was reviewbombed by a bunch of homophobes but wow... Nasty stuff, Xerjoff. Be better.', date: '2024-07-02' },
+    ]
+  },
+  {
+    name: 'Classique Pride 2024',
+    brand: 'Jean Paul Gaultier',
+    description: 'A perfume with the colors of the rainbow that loudly and strongly proclaims self-love and love for differences. A floral fragrance with fresh citrus, neroli, and a soft woody musk base.',
+    topNotes: ['Yuzu', 'Citruses'],
+    middleNotes: ['Neroli', 'Orange Blossom'],
+    baseNotes: ['Blonde Woods', 'Musk'],
+    imageUrl: 'https://fimgs.net/mdimg/perfume/o.90394.jpg',
+    family: 'Floral',
+    longevity: 2,
+    sillage: 2,
+    likes: 40,
+    dislikes: 104,
+    isVerified: false,
+    amazonSearchTerm: 'Jean Paul Gaultier Classique Pride 2024',
+    reviews: [
+        { author: 'peachsiie', rating: 3, comment: "Strong citrusy lemon zest, sweet neroli blossoms, and a very clean musk with something green hidden at the bottom. it’s a bit too floral for my tastes but on someone else this would probably smell great in summer, very refreshing.", date: '2025-04-19' },
+    ]
+  },
+  {
+    name: 'Pride Edition Man',
+    brand: 'Bruno Banani',
+    description: 'A Woody Aromatic fragrance for men, with a fruity and nutty character. Launched in 2019 to celebrate pride.',
+    topNotes: ['Guarana', 'Red Apple', 'Grapefruit'],
+    middleNotes: ['Guava', 'Walnut', 'Lavender'],
+    baseNotes: ['Vetiver', 'Benzoin', 'Amber'],
+    imageUrl: 'https://fimgs.net/mdimg/perfume/o.55514.jpg',
+    family: 'Woody Aromatic',
+    longevity: 2,
+    sillage: 2,
+    likes: 25,
+    dislikes: 58,
+    isVerified: false,
+    amazonSearchTerm: 'Bruno Banani Pride Edition Man',
+    reviews: []
+  },
+  {
+    name: 'Classique Pride 2023',
+    brand: 'Jean Paul Gaultier',
+    description: 'A unisex fragrance celebrating pride, created by Natalie Gracia-Cetto and Quentin Bisch. A vibrant citrus opening meets a heart of neroli and orange blossom, grounded by musk and white woods.',
+    topNotes: ['Blood Orange', 'Yuzu'],
+    middleNotes: ['Neroli', 'Orange Blossom'],
+    baseNotes: ['Musk', 'White Woods'],
+    imageUrl: 'https://fimgs.net/mdimg/perfume/o.81775.jpg',
+    family: 'Citrus Aromatic',
+    longevity: 2,
+    sillage: 2,
+    likes: 100,
+    dislikes: 270,
+    isVerified: false,
+    amazonSearchTerm: 'Jean Paul Gaultier Classique Pride 2023',
+    reviews: [
+        { author: 'queensizefun', rating: 5, comment: "I don't know why this fragrance gets tremendous hate. God, it's amazing. It is a soft powdery Citrus with vanilla. The Citrus is so real upon first spray. It makes me want to keep spraying but don't! Because it is going to last all day long.", date: '2024-04-28' },
+    ]
   }
 ];
 

@@ -149,7 +149,7 @@ const PerfumeDetail: React.FC<PerfumeDetailProps> = ({ perfume, onBack, onUpdate
               <div className="bg-white/60 rounded-lg shadow-xl overflow-hidden border border-champagne-gold/30 md:flex">
                   <div className="md:w-1/2 p-4 flex justify-center items-center bg-champagne-gold/10">
                       <FragranceImage
-                        perfumeName={perfume.name}
+                        perfume={perfume}
                         alt={perfume.name}
                         className="max-h-[500px] object-contain rounded-lg"
                       />

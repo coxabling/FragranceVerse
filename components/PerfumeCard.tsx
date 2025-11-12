@@ -20,7 +20,7 @@ const PerfumeCard: React.FC<PerfumeCardProps> = ({ perfume, onClick }) => {
     >
       <div className="relative h-64">
         <FragranceImage
-          perfumeName={perfume.name}
+          perfume={perfume}
           alt={perfume.name}
           className="w-full h-full object-cover"
         />

@@ -1,11 +1,9 @@
-import { GoogleGenAI, Type } from "@google/genai";
+import { GoogleGenAI, Type, Modality } from "@google/genai";
 import { Perfume } from '../types';
-
-const API_KEY = "AIzaSyA_0luuSMSoRvx5IuKl6I9H91Kexz2BjZ4";
 
 // Create a new client for each request.
 const getAiClient = () => {
-  return new GoogleGenAI({ apiKey: API_KEY });
+  return new GoogleGenAI({ apiKey: process.env.API_KEY });
 };
 
 // Centralized error handler
@@ -201,6 +199,39 @@ export const getSimilarFragrances = async (perfume: Perfume): Promise<Omit<Perfu
         const jsonString = response.text;
         const parsed = JSON.parse(jsonString);
         return parsed.recommendations || parsed;
+    } catch (error) {
+        handleApiError(error);
+    }
+};
+
+export const generateFragranceImage = async (perfume: Perfume): Promise<string> => {
+    try {
+        const ai = getAiClient();
+        const allNotes = [...perfume.topNotes, ...perfume.middleNotes, ...perfume.baseNotes].slice(0, 5).join(', ');
+        const prompt = `A professional, photorealistic product shot of a perfume bottle for "${perfume.name}" by ${perfume.brand}.
+        The style is elegant, luxurious, and minimalist.
+        The bottle is the central focus, appearing chic and appealing.
+        The background is clean and soft-focus, subtly evoking its key notes of ${allNotes}.
+        The lighting is bright and airy.`;
+
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash-image',
+            contents: {
+                parts: [{ text: prompt }],
+            },
+            config: {
+                responseModalities: [Modality.IMAGE],
+            },
+        });
+
+        for (const part of response.candidates[0].content.parts) {
+            if (part.inlineData) {
+                return part.inlineData.data;
+            }
+        }
+        
+        throw new Error("No image data found in the AI response.");
+
     } catch (error) {
         handleApiError(error);
     }
