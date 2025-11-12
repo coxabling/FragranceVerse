@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Perfume, Wardrobe, WardrobeShelf, Review } from '../types';
 import { ArrowLeftIcon } from './icons/ArrowLeftIcon';
@@ -11,7 +12,6 @@ import { ShoppingBagIcon } from './icons/ShoppingBagIcon';
 import { ThumbUpIcon } from './icons/ThumbUpIcon';
 import { ThumbDownIcon } from './icons/ThumbDownIcon';
 import FragranceImage from './FragranceImage';
-import { useApiKey } from '../contexts/ApiKeyContext';
 
 interface PerfumeDetailProps {
   perfume: Perfume;
@@ -53,7 +53,6 @@ const PerfumeDetail: React.FC<PerfumeDetailProps> = ({ perfume, onBack, onUpdate
   const [similarError, setSimilarError] = useState<string | null>(null);
   const [reviews, setReviews] = useState<Review[]>(perfume.reviews);
   const [newReview, setNewReview] = useState({ rating: 0, comment: '' });
-  const { resetApiKey } = useApiKey();
 
   useEffect(() => {
     const fetchSimilar = async () => {
@@ -65,17 +64,13 @@ const PerfumeDetail: React.FC<PerfumeDetailProps> = ({ perfume, onBack, onUpdate
       } catch (error) {
         console.error(error);
         const errorMessage = error instanceof Error ? error.message : "Could not load similar fragrances.";
-        if (errorMessage.includes('Invalid API key')) {
-            resetApiKey();
-        } else {
-            setSimilarError(errorMessage);
-        }
+        setSimilarError(errorMessage);
       } finally {
         setIsLoadingSimilar(false);
       }
     };
     fetchSimilar();
-  }, [perfume, resetApiKey]);
+  }, [perfume]);
 
   const handleRatingClick = (action: 'like' | 'dislike') => {
     const oldAction = userAction;

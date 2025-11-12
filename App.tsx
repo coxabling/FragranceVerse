@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import Header from './components/Header';
 import Hero from './components/Hero';
@@ -10,8 +11,6 @@ import PerfumeCard from './components/PerfumeCard';
 import PerfumeDetail from './components/PerfumeDetail';
 import Profile from './components/Profile';
 import { Perfume, Wardrobe, WardrobeShelf } from './types';
-import ApiKeyPrompt from './components/ApiKeyPrompt';
-import { ApiKeyProvider } from './contexts/ApiKeyContext';
 
 type View = 'home' | 'matchmaker' | 'visualizer' | 'community' | 'profile';
 
@@ -23,22 +22,8 @@ const App: React.FC = () => {
   const [userWardrobe, setUserWardrobe] = useState<Wardrobe>({ own: [], want: [], tried: [] });
   const [userRatings, setUserRatings] = useState<Record<string, 'like' | 'dislike'>>({});
   const [recentlyViewed, setRecentlyViewed] = useState<Perfume[]>([]);
-  const [hasApiKey, setHasApiKey] = useState(false);
-  const [isKeyLoading, setIsKeyLoading] = useState(true);
-
-  const checkApiKey = async () => {
-    if (window.aistudio && typeof window.aistudio.hasSelectedApiKey === 'function') {
-        const keyStatus = await window.aistudio.hasSelectedApiKey();
-        setHasApiKey(keyStatus);
-    } else {
-        // Fallback for environments where aistudio is not available
-        setHasApiKey(true); 
-    }
-    setIsKeyLoading(false);
-  };
 
   useEffect(() => {
-    checkApiKey();
     try {
       const storedRecent = localStorage.getItem('recentlyViewed');
       if (storedRecent) {
@@ -125,18 +110,6 @@ const App: React.FC = () => {
   
   const trendingPerfumeNames = ['Black Opium', 'Santal 33', 'Acqua di Giò', 'Spicebomb'];
   const trendingPerfumes = perfumes.filter(p => trendingPerfumeNames.includes(p.name));
-
-  const resetApiKey = () => {
-      setHasApiKey(false);
-  };
-
-  if (isKeyLoading) {
-      return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
-  }
-  
-  if (!hasApiKey) {
-      return <ApiKeyPrompt onKeySelected={() => setHasApiKey(true)} />;
-  }
 
   const renderHomeContent = () => (
      <>
@@ -236,23 +209,21 @@ const App: React.FC = () => {
   };
 
   return (
-    <ApiKeyProvider resetApiKey={resetApiKey}>
-        <div className="min-h-screen flex flex-col">
-          <Header
-            currentView={currentView}
-            setCurrentView={(view) => {
-              setSelectedPerfume(null); // Reset detail view when changing tabs
-              setCurrentView(view);
-            }}
-            searchTerm={searchTerm}
-            setSearchTerm={setSearchTerm}
-          />
-          <main className="flex-grow">
-            {renderView()}
-          </main>
-          <Footer />
-        </div>
-    </ApiKeyProvider>
+    <div className="min-h-screen flex flex-col">
+      <Header
+        currentView={currentView}
+        setCurrentView={(view) => {
+          setSelectedPerfume(null); // Reset detail view when changing tabs
+          setCurrentView(view);
+        }}
+        searchTerm={searchTerm}
+        setSearchTerm={setSearchTerm}
+      />
+      <main className="flex-grow">
+        {renderView()}
+      </main>
+      <Footer />
+    </div>
   );
 };
 

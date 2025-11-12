@@ -1,3 +1,4 @@
+
 export interface Review {
   author: string;
   rating: number; // out of 5
@@ -47,18 +48,4 @@ export interface Wardrobe {
   own: Perfume[];
   want: Perfume[];
   tried: Perfume[];
-}
-
-// Fix: To resolve the "Subsequent property declarations must have the same type" error,
-// the AIStudio interface is moved inside the `declare global` block. This ensures it's
-// declared in the global scope, preventing conflicts when augmenting the global Window type from within a module.
-declare global {
-  interface AIStudio {
-    openSelectKey: () => Promise<void>;
-    hasSelectedApiKey: () => Promise<boolean>;
-  }
-
-  interface Window {
-    aistudio?: AIStudio;
-  }
 }

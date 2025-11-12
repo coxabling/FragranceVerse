@@ -10,11 +10,8 @@ const similarFragrancesCache = new Map<string, Omit<Perfume, 'reviews'>[]>();
 const enhancePostCache = new Map<string, string>();
 
 
-// Create a new client for each request.
+// Create a new client for each request, assuming API_KEY is in the environment.
 const getAiClient = () => {
-  if (!process.env.API_KEY) {
-    throw new Error("API_KEY_MISSING");
-  }
   return new GoogleGenAI({ apiKey: process.env.API_KEY });
 };
 
@@ -22,10 +19,6 @@ const getAiClient = () => {
 const handleApiError = (error: unknown): never => {
   console.error("Error calling Gemini API:", error);
   if (error instanceof Error) {
-    const message = error.message.toLowerCase();
-    if (message.includes('api key not valid') || message.includes('api key is invalid') || message.includes('requested entity was not found') || message.includes('api_key_missing')) {
-        throw new Error("Invalid API key. Please select a valid key to continue.");
-    }
     throw new Error(`Failed to get a response from the AI: ${error.message}`);
   }
   throw new Error("An unknown error occurred while contacting the AI service.");
