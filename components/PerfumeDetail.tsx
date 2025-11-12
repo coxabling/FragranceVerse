@@ -10,6 +10,7 @@ import { VerifiedIcon } from './icons/VerifiedIcon';
 import { ShoppingBagIcon } from './icons/ShoppingBagIcon';
 import { ThumbUpIcon } from './icons/ThumbUpIcon';
 import { ThumbDownIcon } from './icons/ThumbDownIcon';
+import FragranceImage from './FragranceImage';
 
 interface PerfumeDetailProps {
   perfume: Perfume;
@@ -146,8 +147,12 @@ const PerfumeDetail: React.FC<PerfumeDetailProps> = ({ perfume, onBack, onUpdate
               </button>
             
               <div className="bg-white/60 rounded-lg shadow-xl overflow-hidden border border-champagne-gold/30 md:flex">
-                  <div className="md:w-1/2 p-4 flex justify-center items-center">
-                      <img src={perfume.imageUrl} alt={perfume.name} className="max-h-[500px] object-contain rounded-lg" />
+                  <div className="md:w-1/2 p-4 flex justify-center items-center bg-champagne-gold/10">
+                      <FragranceImage
+                        perfumeName={perfume.name}
+                        alt={perfume.name}
+                        className="max-h-[500px] object-contain rounded-lg"
+                      />
                   </div>
                   <div className="md:w-1/2 p-6 md:p-8 flex flex-col justify-center">
                       <h1 className="text-4xl lg:text-5xl font-serif font-bold text-deep-taupe">{perfume.name}</h1>

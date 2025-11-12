@@ -18,7 +18,7 @@ export interface Perfume {
   topNotes: string[];
   middleNotes: string[];
   baseNotes: string[];
-  imageUrl: string;
+  imageUrl?: string;
   family?: string;
   longevity: number; // Rating out of 5
   sillage: number;   // Rating out of 5

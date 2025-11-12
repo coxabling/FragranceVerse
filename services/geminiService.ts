@@ -22,7 +22,7 @@ export const getFragranceRecommendations = async (prompt: string): Promise<Perfu
     const ai = getAiClient();
     const response = await ai.models.generateContent({
       model: "gemini-2.5-flash",
-      contents: `Based on the following user input: "${prompt}", act as an expert fragrance sommelier. Recommend 3 real-world, well-known perfumes. For each perfume, provide its name, brand, a poetic one-sentence description, and three separate lists for its key top, middle, and base notes. Also include a placeholder image URL from i.ibb.co and a rating from 1 to 5 for both longevity and sillage.`,
+      contents: `Based on the following user input: "${prompt}", act as an expert fragrance sommelier. Recommend 3 real-world, well-known perfumes. For each perfume, provide its name, brand, a poetic one-sentence description, and three separate lists for its key top, middle, and base notes. Also include a rating from 1 to 5 for both longevity and sillage.`,
       config: {
         responseMimeType: "application/json",
         responseSchema: {
@@ -48,11 +48,10 @@ export const getFragranceRecommendations = async (prompt: string): Promise<Perfu
                     type: Type.ARRAY,
                     items: { type: Type.STRING },
                   },
-                  imageUrl: { type: Type.STRING },
                   longevity: { type: Type.NUMBER },
                   sillage: { type: Type.NUMBER },
                 },
-                required: ["name", "brand", "description", "topNotes", "middleNotes", "baseNotes", "imageUrl", "longevity", "sillage"],
+                required: ["name", "brand", "description", "topNotes", "middleNotes", "baseNotes", "longevity", "sillage"],
               },
             },
           },
@@ -88,7 +87,7 @@ export const getFragranceRecommendationsByVibe = async (base64Data: string, mime
     };
 
     const textPart = {
-      text: `Based on the vibe and atmosphere of this image, act as an expert fragrance sommelier. Recommend 3 real-world, well-known perfumes that match the mood. For each perfume, provide its name, brand, a poetic one-sentence description, and three separate lists for its key top, middle, and base notes. Also include a placeholder image URL from i.ibb.co and a rating from 1 to 5 for both longevity and sillage.`,
+      text: `Based on the vibe and atmosphere of this image, act as an expert fragrance sommelier. Recommend 3 real-world, well-known perfumes that match the mood. For each perfume, provide its name, brand, a poetic one-sentence description, and three separate lists for its key top, middle, and base notes. Also include a rating from 1 to 5 for both longevity and sillage.`,
     };
 
     const response = await ai.models.generateContent({
@@ -119,11 +118,10 @@ export const getFragranceRecommendationsByVibe = async (base64Data: string, mime
                     type: Type.ARRAY,
                     items: { type: Type.STRING },
                   },
-                  imageUrl: { type: Type.STRING },
                   longevity: { type: Type.NUMBER },
                   sillage: { type: Type.NUMBER },
                 },
-                required: ["name", "brand", "description", "topNotes", "middleNotes", "baseNotes", "imageUrl", "longevity", "sillage"],
+                required: ["name", "brand", "description", "topNotes", "middleNotes", "baseNotes", "longevity", "sillage"],
               },
             },
           },
@@ -165,7 +163,7 @@ export const enhancePost = async (text: string): Promise<string> => {
 
 export const getSimilarFragrances = async (perfume: Perfume): Promise<Omit<Perfume, 'reviews'>[]> => {
     const allNotes = [...perfume.topNotes, ...perfume.middleNotes, ...perfume.baseNotes].join(', ');
-    const prompt = `Given the perfume "${perfume.name}" by "${perfume.brand}" with key notes like ${allNotes}, recommend 3 other real-world, well-known perfumes that have a similar scent profile or vibe. For each recommendation, provide its name, brand, a poetic one-sentence description, and three separate lists for its key top, middle, and base notes. Also include a placeholder image URL from i.ibb.co and a rating from 1 to 5 for both longevity and sillage. Do not recommend the original perfume itself.`;
+    const prompt = `Given the perfume "${perfume.name}" by "${perfume.brand}" with key notes like ${allNotes}, recommend 3 other real-world, well-known perfumes that have a similar scent profile or vibe. For each recommendation, provide its name, brand, a poetic one-sentence description, and three separate lists for its key top, middle, and base notes. Also include a rating from 1 to 5 for both longevity and sillage. Do not recommend the original perfume itself.`;
 
     try {
          const ai = getAiClient();
@@ -188,11 +186,10 @@ export const getSimilarFragrances = async (perfume: Perfume): Promise<Omit<Perfu
                                     topNotes: { type: Type.ARRAY, items: { type: Type.STRING } },
                                     middleNotes: { type: Type.ARRAY, items: { type: Type.STRING } },
                                     baseNotes: { type: Type.ARRAY, items: { type: Type.STRING } },
-                                    imageUrl: { type: Type.STRING },
                                     longevity: { type: Type.NUMBER },
                                     sillage: { type: Type.NUMBER },
                                 },
-                                required: ["name", "brand", "description", "topNotes", "middleNotes", "baseNotes", "imageUrl", "longevity", "sillage"],
+                                required: ["name", "brand", "description", "topNotes", "middleNotes", "baseNotes", "longevity", "sillage"],
                             },
                         },
                     },

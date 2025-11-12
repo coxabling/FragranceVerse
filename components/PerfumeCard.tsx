@@ -1,6 +1,7 @@
 import React from 'react';
 import { Perfume } from '../types';
 import { VerifiedIcon } from './icons/VerifiedIcon';
+import FragranceImage from './FragranceImage';
 
 interface PerfumeCardProps {
   perfume: Perfume;
@@ -18,11 +19,10 @@ const PerfumeCard: React.FC<PerfumeCardProps> = ({ perfume, onClick }) => {
       className="bg-white/60 rounded-lg shadow-md overflow-hidden group transform hover:-translate-y-2 transition-transform duration-300 border border-champagne-gold/30 flex flex-col cursor-pointer"
     >
       <div className="relative h-64">
-        <img 
-          src={perfume.imageUrl} 
-          alt={perfume.name} 
+        <FragranceImage
+          perfumeName={perfume.name}
+          alt={perfume.name}
           className="w-full h-full object-cover"
-          loading="lazy"
         />
         <div className="absolute inset-0 bg-black/20 group-hover:bg-black/40 transition-colors duration-300"></div>
       </div>
